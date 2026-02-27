@@ -5,6 +5,7 @@ import {
   useBoxLocationHistory,
   useBoxes,
   useBins,
+  usePOs,
 } from "@/hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRightLeft, MapPin } from "lucide-react";
+import { ArrowRightLeft, MapPin, PackagePlus } from "lucide-react";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("id-ID", {
@@ -33,6 +34,18 @@ export default function HistoryPage() {
   const { data: boxLocationHistory = [] } = useBoxLocationHistory();
   const { data: boxes = [] } = useBoxes();
   const { data: bins = [] } = useBins();
+  const { data: pos = [] } = usePOs();
+
+  // Count POs per box
+  const poCountByBox = pos.reduce<Record<string, number>>((acc, po) => {
+    acc[po.box_id] = (acc[po.box_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Boxes sorted by created_at descending for Arsip Masuk
+  const sortedBoxes = [...boxes].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   function getBoxLabel(boxId: string) {
     const box = boxes.find((b) => b.id === boxId);
@@ -54,8 +67,12 @@ export default function HistoryPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="po">
+      <Tabs defaultValue="arsip">
         <TabsList>
+          <TabsTrigger value="arsip">
+            <PackagePlus className="h-4 w-4 mr-2" />
+            Arsip Masuk ({boxes.length})
+          </TabsTrigger>
           <TabsTrigger value="po">
             <ArrowRightLeft className="h-4 w-4 mr-2" />
             Perpindahan PO ({poTransferHistory.length})
@@ -65,6 +82,57 @@ export default function HistoryPage() {
             Relokasi Box ({boxLocationHistory.length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Arsip Masuk */}
+        <TabsContent value="arsip" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Catatan Arsip Masuk</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {sortedBoxes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Belum ada arsip.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">#</TableHead>
+                        <TableHead>No. Gungyu</TableHead>
+                        <TableHead>Tahun</TableHead>
+                        <TableHead>Dibuat Oleh</TableHead>
+                        <TableHead>Lokasi</TableHead>
+                        <TableHead className="text-right">Jumlah PO</TableHead>
+                        <TableHead>Waktu Dibuat</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedBoxes.map((box, idx) => (
+                        <TableRow key={box.id}>
+                          <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="font-mono font-medium">
+                            {box.no_gungyu ?? <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>{box.tahun}</TableCell>
+                          <TableCell>{box.owner_name}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {box.location_code ?? <span className="text-muted-foreground">Belum ditempatkan</span>}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {poCountByBox[box.id] ?? 0}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDate(box.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* PO Transfer History */}
         <TabsContent value="po" className="mt-4">

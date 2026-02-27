@@ -40,6 +40,7 @@ export default function BorrowPage() {
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
   const [selectedPOIds, setSelectedPOIds] = useState<string[]>([]);
   const [borrowerName, setBorrowerName] = useState("");
+  const [borrowerDepartment, setBorrowerDepartment] = useState("");
   const [borrowNotes, setBorrowNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -62,11 +63,12 @@ export default function BorrowPage() {
   };
 
   const handleBorrow = async () => {
-    if (selectedPOIds.length === 0 || !borrowerName.trim()) return;
+    if (selectedPOIds.length === 0 || !borrowerName.trim() || !borrowerDepartment.trim()) return;
     for (const id of selectedPOIds) {
       await borrowPO.mutateAsync({
         poId: id,
         borrowerName: borrowerName.trim(),
+        department: borrowerDepartment.trim(),
         notes: borrowNotes.trim(),
       });
     }
@@ -74,6 +76,7 @@ export default function BorrowPage() {
     setBorrowDialogOpen(false);
     setSelectedPOIds([]);
     setBorrowerName("");
+    setBorrowerDepartment("");
     setBorrowNotes("");
     setSearchQuery("");
   };
@@ -121,6 +124,7 @@ export default function BorrowPage() {
                     <TableHead>NO. PO</TableHead>
                     <TableHead>Nama Barang</TableHead>
                     <TableHead>Peminjam</TableHead>
+                    <TableHead>Departemen</TableHead>
                     <TableHead>Tgl Pinjam</TableHead>
                     <TableHead>Keperluan</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
@@ -137,6 +141,7 @@ export default function BorrowPage() {
                         </TableCell>
                         <TableCell>{po.nama_barang}</TableCell>
                         <TableCell>{log?.borrower_name ?? "—"}</TableCell>
+                        <TableCell>{log?.department || "—"}</TableCell>
                         <TableCell>
                           {log?.borrowed_at
                             ? new Date(log.borrowed_at).toLocaleDateString(
@@ -184,6 +189,7 @@ export default function BorrowPage() {
                   <TableRow>
                     <TableHead>NO. PO</TableHead>
                     <TableHead>Peminjam</TableHead>
+                    <TableHead>Departemen</TableHead>
                     <TableHead>Tgl Pinjam</TableHead>
                     <TableHead>Tgl Kembali</TableHead>
                     <TableHead>Status</TableHead>
@@ -198,8 +204,7 @@ export default function BorrowPage() {
                         <TableCell className="font-medium">
                           {log.no_po}
                         </TableCell>
-                        <TableCell>{log.borrower_name}</TableCell>
-                        <TableCell>
+                        <TableCell>{log.borrower_name}</TableCell>                          <TableCell>{log.department || "—"}</TableCell>                        <TableCell>
                           {new Date(log.borrowed_at).toLocaleDateString(
                             "id-ID",
                           )}
@@ -230,7 +235,16 @@ export default function BorrowPage() {
       </Card>
 
       {/* Borrow Dialog */}
-      <Dialog open={borrowDialogOpen} onOpenChange={setBorrowDialogOpen}>
+      <Dialog open={borrowDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedPOIds([]);
+          setBorrowerName("");
+          setBorrowerDepartment("");
+          setBorrowNotes("");
+          setSearchQuery("");
+        }
+        setBorrowDialogOpen(open);
+      }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Pinjam PO</DialogTitle>
@@ -240,7 +254,7 @@ export default function BorrowPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
+            <div className="space-y-1.5">
               <Label>Cari PO</Label>
               <Input
                 placeholder="Ketik NO. PO atau Nama Barang..."
@@ -249,56 +263,70 @@ export default function BorrowPage() {
               />
             </div>
 
-            <div className="max-h-48 overflow-y-auto border rounded-md">
-              {availablePOs.length === 0 && searchQuery ? (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  Tidak ditemukan
+            <div className="space-y-1.5">
+              <div className="max-h-48 overflow-y-auto border rounded-md">
+                {availablePOs.length === 0 && searchQuery ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    Tidak ditemukan
+                  </p>
+                ) : availablePOs.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    Ketik untuk mencari PO...
+                  </p>
+                ) : (
+                  availablePOs.slice(0, 20).map((po) => (
+                    <label
+                      key={po.id}
+                      className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedPOIds.includes(po.id)}
+                        onChange={() => toggleBorrowPO(po.id)}
+                        className="h-3.5 w-3.5 shrink-0 accent-primary"
+                      />
+                      <span className="font-mono font-medium">{po.no_po}</span>
+                      {po.nama_barang && (
+                        <span className="text-muted-foreground truncate">
+                          — {po.nama_barang}
+                        </span>
+                      )}
+                    </label>
+                  ))
+                )}
+              </div>
+              {selectedPOIds.length > 0 && (
+                <p className="text-xs text-primary font-medium">
+                  {selectedPOIds.length} PO dipilih
                 </p>
-              ) : availablePOs.length === 0 ? (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  Ketik untuk mencari PO...
-                </p>
-              ) : (
-                availablePOs.slice(0, 20).map((po) => (
-                  <label
-                    key={po.id}
-                    className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPOIds.includes(po.id)}
-                      onChange={() => toggleBorrowPO(po.id)}
-                      className="h-3.5 w-3.5 shrink-0 accent-primary"
-                    />
-                    <span className="font-mono font-medium">{po.no_po}</span>
-                    {po.nama_barang && (
-                      <span className="text-muted-foreground truncate">
-                        — {po.nama_barang}
-                      </span>
-                    )}
-                  </label>
-                ))
               )}
             </div>
-            {selectedPOIds.length > 0 && (
-              <p className="text-xs text-primary font-medium">
-                {selectedPOIds.length} PO dipilih
-              </p>
-            )}
 
-            <div>
-              <Label>Nama Peminjam</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="borrower-name">Nama Peminjam <span className="text-destructive">*</span></Label>
               <Input
+                id="borrower-name"
                 placeholder="Nama lengkap peminjam"
                 value={borrowerName}
                 onChange={(e) => setBorrowerName(e.target.value)}
               />
             </div>
 
-            <div>
-              <Label>Keperluan (opsional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="borrower-dept">Departemen <span className="text-destructive">*</span></Label>
               <Input
-                placeholder="Alasan peminjaman"
+                id="borrower-dept"
+                placeholder="Contoh: Pengadaan, Keuangan, Produksi…"
+                value={borrowerDepartment}
+                onChange={(e) => setBorrowerDepartment(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="borrow-notes">Keperluan <span className="text-muted-foreground text-xs font-normal">(opsional)</span></Label>
+              <Input
+                id="borrow-notes"
+                placeholder="Alasan atau keperluan peminjaman"
                 value={borrowNotes}
                 onChange={(e) => setBorrowNotes(e.target.value)}
               />
@@ -314,7 +342,7 @@ export default function BorrowPage() {
             </Button>
             <Button
               onClick={handleBorrow}
-              disabled={selectedPOIds.length === 0 || !borrowerName.trim()}
+              disabled={selectedPOIds.length === 0 || !borrowerName.trim() || !borrowerDepartment.trim()}
             >
               Pinjam{" "}
               {selectedPOIds.length > 0 ? `(${selectedPOIds.length})` : ""}

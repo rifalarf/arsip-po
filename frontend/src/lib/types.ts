@@ -75,6 +75,7 @@ export interface BorrowLog {
   po_id: string;
   no_po: string;
   borrower_name: string;
+  department: string;
   borrowed_at: string;
   returned_at: string | null;
   notes: string;

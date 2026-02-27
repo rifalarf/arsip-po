@@ -106,20 +106,29 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
                     onClick={() => setShowPassword((v) => !v)}
                     tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword
-                      ? <EyeOff className="h-4 w-4" aria-hidden="true" />
-                      : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </button>
                 </div>
               </div>
 
               {error && (
-                <p className="text-sm text-destructive font-medium" role="alert">
+                <p
+                  className="text-sm text-destructive font-medium"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -131,7 +140,10 @@ export default function LoginPage() {
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="mr-2 h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
                     Masuk…
                   </>
                 ) : (

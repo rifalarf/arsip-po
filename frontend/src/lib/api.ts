@@ -251,11 +251,11 @@ export async function apiCreateBox(
         // 5. Record in box_location_history
         await supabase.from("box_location_history").insert({
           box_id: newBox.id,
-          bin_id: target.id,
-          location_code: target.bin_code,
-          action: "PLACE",
-          performed_by: user.id,
-          performed_at: now,
+          from_bin_id: null,
+          to_bin_id: target.id,
+          moved_by: user.name,
+          moved_at: now,
+          notes: "Auto-assign saat pembuatan arsip",
         });
 
         return {
@@ -554,6 +554,7 @@ export async function apiDeletePO(poId: string): Promise<ActionResult> {
 export async function apiBorrowPO(
   poId: string,
   borrowerName: string,
+  department: string,
   notes: string,
 ): Promise<ActionResult> {
   const { data: po } = await supabase
@@ -579,6 +580,7 @@ export async function apiBorrowPO(
     po_id: poId,
     no_po: po.no_po,
     borrower_name: borrowerName,
+    department: department || "",
     borrowed_at: new Date().toISOString(),
     notes: notes || "",
   });
