@@ -37,29 +37,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on mount
+  // Restore session on mount — rely solely on onAuthStateChange (fires INITIAL_SESSION on subscribe)
   useEffect(() => {
-    const restore = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setUser(profile);
-      }
-      setLoading(false);
-    };
-    restore();
+    let initialised = false;
 
-    // Listen for auth state changes (e.g. token refresh, sign-out in another tab)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
         setUser(profile);
       } else {
         setUser(null);
+      }
+      // Only flip loading off once (on the first event — INITIAL_SESSION)
+      if (!initialised) {
+        initialised = true;
+        setLoading(false);
       }
     });
 
