@@ -482,7 +482,16 @@ export async function apiMovePOToBox(
 // ---- Edit PO ----
 export async function apiEditPO(
   poId: string,
-  fields: { nama_barang: string; dok_date: string; keterangan: string },
+  fields: {
+    no_po: string;
+    tahun: number;
+    nama_barang: string;
+    dok_date: string;
+    buyer_name: string;
+    keterangan: string;
+    borrow_status: string;
+    no_gungyu: string;
+  },
 ): Promise<ActionResult> {
   const { data: po } = await supabase
     .from("pos")
@@ -494,9 +503,13 @@ export async function apiEditPO(
   const { error } = await supabase
     .from("pos")
     .update({
+      no_po: fields.no_po,
+      tahun: fields.tahun,
       nama_barang: fields.nama_barang,
       dok_date: fields.dok_date,
+      buyer_name: fields.buyer_name,
       keterangan: fields.keterangan,
+      borrow_status: fields.borrow_status,
     })
     .eq("id", poId);
 
@@ -504,7 +517,14 @@ export async function apiEditPO(
     return { success: false, message: `Gagal edit PO: ${error.message}` };
   }
 
-  return { success: true, message: `PO ${po.no_po} berhasil diupdate.` };
+  if (po.box_id) {
+    await supabase
+      .from("boxes")
+      .update({ no_gungyu: fields.no_gungyu || null })
+      .eq("id", po.box_id);
+  }
+
+  return { success: true, message: `PO ${fields.no_po} berhasil diupdate.` };
 }
 
 // ---- Delete PO ----

@@ -15,7 +15,7 @@ import {
   type ColumnFiltersState,
   type Column,
 } from "@tanstack/react-table";
-import { usePOs, useBoxes } from "@/hooks/queries";
+import { usePOs, useBoxes, useUsers } from "@/hooks/queries";
 import { useMovePOToBox, useEditPO, useDeletePO } from "@/hooks/mutations";
 import { useApp } from "@/lib/context";
 import { Card, CardContent } from "@/components/ui/card";
@@ -415,6 +415,8 @@ export default function POListPage() {
   const { user } = useApp();
   const { data: pos = [] } = usePOs();
   const { data: boxes = [] } = useBoxes();
+  const { data: users = [] } = useUsers();
+  const buyers = users.filter((u) => u.role === "buyer");
 
   const movePOToBox = useMovePOToBox();
   const editPO = useEditPO();
@@ -430,9 +432,14 @@ export default function POListPage() {
   const [editPOOpen, setEditPOOpen] = useState(false);
   const [editPOData, setEditPOData] = useState<{
     id: string;
+    no_po: string;
+    tahun: number;
+    no_gungyu: string;
     nama_barang: string;
     dok_date: string;
+    pic: string;
     keterangan: string;
+    status: string;
   } | null>(null);
 
   // Delete PO dialog state
@@ -491,9 +498,14 @@ export default function POListPage() {
               onClick={() => {
                 setEditPOData({
                   id: row.original.id,
+                  no_po: row.original.no_po,
+                  tahun: row.original.tahun,
+                  no_gungyu: row.original.no_gungyu,
                   nama_barang: row.original.nama_barang,
                   dok_date: row.original.dok_date,
+                  pic: row.original.pic,
                   keterangan: row.original.keterangan,
+                  status: row.original.status,
                 });
                 setEditPOOpen(true);
               }}
@@ -544,9 +556,14 @@ export default function POListPage() {
     const result = await editPO.mutateAsync({
       poId: editPOData.id,
       fields: {
+        no_po: editPOData.no_po,
+        tahun: editPOData.tahun,
         nama_barang: editPOData.nama_barang,
         dok_date: editPOData.dok_date,
+        buyer_name: editPOData.pic,
         keterangan: editPOData.keterangan,
+        borrow_status: editPOData.status === "Dipinjam" ? "BORROWED" : "AVAILABLE",
+        no_gungyu: editPOData.no_gungyu,
       },
     });
     if (result.success) {
@@ -868,36 +885,100 @@ export default function POListPage() {
 
       {/* Edit PO Dialog */}
       <Dialog open={editPOOpen} onOpenChange={setEditPOOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit PO</DialogTitle>
           </DialogHeader>
           {editPOData && (
-            <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4 py-2">
+              {/* No PO */}
+              <div className="space-y-1.5">
+                <Label>No PO</Label>
+                <Input
+                  value={editPOData.no_po}
+                  onChange={(e) =>
+                    setEditPOData({ ...editPOData, no_po: e.target.value })
+                  }
+                  placeholder="No PO…"
+                />
+              </div>
+              {/* Tahun */}
+              <div className="space-y-1.5">
+                <Label>Tahun</Label>
+                <Select
+                  value={String(editPOData.tahun)}
+                  onValueChange={(v) =>
+                    setEditPOData({ ...editPOData, tahun: Number(v) })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih tahun…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 11 }, (_, i) => 2021 + i).map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* No Gungyu */}
+              <div className="space-y-1.5">
+                <Label>No Gungyu</Label>
+                <Input
+                  value={editPOData.no_gungyu}
+                  onChange={(e) =>
+                    setEditPOData({ ...editPOData, no_gungyu: e.target.value })
+                  }
+                  placeholder="No gungyu…"
+                />
+              </div>
+              {/* Nama Barang */}
               <div className="space-y-1.5">
                 <Label>Nama Barang</Label>
                 <Input
                   value={editPOData.nama_barang}
                   onChange={(e) =>
-                    setEditPOData({
-                      ...editPOData,
-                      nama_barang: e.target.value,
-                    })
+                    setEditPOData({ ...editPOData, nama_barang: e.target.value })
                   }
                   placeholder="Nama barang…"
                 />
               </div>
+              {/* Dok Date */}
               <div className="space-y-1.5">
                 <Label>Dok Date</Label>
                 <Input
+                  type="date"
                   value={editPOData.dok_date}
                   onChange={(e) =>
                     setEditPOData({ ...editPOData, dok_date: e.target.value })
                   }
-                  placeholder="Dok date…"
                 />
               </div>
+              {/* PIC */}
               <div className="space-y-1.5">
+                <Label>PIC</Label>
+                <Select
+                  value={editPOData.pic}
+                  onValueChange={(v) =>
+                    setEditPOData({ ...editPOData, pic: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih PIC…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buyers.map((b) => (
+                      <SelectItem key={b.id} value={b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Keterangan - full width */}
+              <div className="col-span-2 space-y-1.5">
                 <Label>Keterangan</Label>
                 <Input
                   value={editPOData.keterangan}
@@ -906,6 +987,24 @@ export default function POListPage() {
                   }
                   placeholder="Keterangan…"
                 />
+              </div>
+              {/* Status - full width */}
+              <div className="col-span-2 space-y-1.5">
+                <Label>Status</Label>
+                <Select
+                  value={editPOData.status}
+                  onValueChange={(v) =>
+                    setEditPOData({ ...editPOData, status: v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih status…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tersedia">Tersedia</SelectItem>
+                    <SelectItem value="Dipinjam">Dipinjam</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

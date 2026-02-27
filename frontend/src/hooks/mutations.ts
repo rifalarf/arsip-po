@@ -85,10 +85,20 @@ export function useEditPO() {
   return useMutation({
     mutationFn: (vars: {
       poId: string;
-      fields: { nama_barang: string; dok_date: string; keterangan: string };
+      fields: {
+        no_po: string;
+        tahun: number;
+        nama_barang: string;
+        dok_date: string;
+        buyer_name: string;
+        keterangan: string;
+        borrow_status: string;
+        no_gungyu: string;
+      };
     }) => apiEditPO(vars.poId, vars.fields),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.pos });
+      qc.invalidateQueries({ queryKey: queryKeys.boxes });
     },
   });
 }
