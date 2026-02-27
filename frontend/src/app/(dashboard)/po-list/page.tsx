@@ -143,7 +143,7 @@ function ColumnFilterPopup({
 
   // Values visible in the picklist (after search)
   const visibleValues = search
-    ? allValues.filter((v) => v.toLowerCase().includes(search.toLowerCase()))
+    ? allValues.filter((nilaiItem) => nilaiItem.toLowerCase().includes(search.toLowerCase()))
     : allValues;
 
   const filterValue = column.getFilterValue() as string[] | undefined;
@@ -169,11 +169,11 @@ function ColumnFilterPopup({
   const toggle = (val: string) => {
     if (!isFiltered) {
       // Currently showing all → uncheck one = all EXCEPT this
-      const next = allValues.filter((v) => v !== val);
+      const next = allValues.filter((nilaiItem) => nilaiItem !== val);
       column.setFilterValue(next);
     } else {
       const next = selected.includes(val)
-        ? selected.filter((s) => s !== val)
+        ? selected.filter((nilaiTerpilih) => nilaiTerpilih !== val)
         : [...selected, val];
       // If result includes everything, clear filter entirely
       column.setFilterValue(next.length >= allValues.length ? undefined : next);
@@ -187,7 +187,7 @@ function ColumnFilterPopup({
         column.setFilterValue([]);
       } else {
         // Remove visible values from selected
-        const next = selected.filter((s) => !visibleValues.includes(s));
+        const next = selected.filter((nilaiTerpilih) => !visibleValues.includes(nilaiTerpilih));
         column.setFilterValue(next);
       }
     } else {
@@ -417,7 +417,7 @@ export default function POListPage() {
   const { data: pos = [] } = usePOs();
   const { data: boxes = [] } = useBoxes();
   const { data: users = [] } = useUsers();
-  const buyers = users.filter((u) => u.role === "buyer");
+  const buyers = users.filter((pengguna) => pengguna.role === "buyer");
 
   const movePOToBox = useMovePOToBox();
   const editPO = useEditPO();
@@ -456,7 +456,7 @@ export default function POListPage() {
   // Flatten PO + matching Box into one flat row
   const data = useMemo<PORow[]>(() => {
     return pos.map((po) => {
-      const box = boxes.find((b) => b.id === po.box_id);
+      const box = boxes.find((box) => box.id === po.box_id);
       return {
         id: po.id,
         box_id: po.box_id,
@@ -593,10 +593,10 @@ export default function POListPage() {
 
   // Available boxes for move target (exclude current box of selected PO)
   const moveTargetBoxes = useMemo(() => {
-    if (!movePOId) return boxes.filter((b) => b.status !== "CANCELLED");
-    const currentPO = data.find((r) => r.id === movePOId);
+    if (!movePOId) return boxes.filter((box) => box.status !== "CANCELLED");
+    const currentPO = data.find((baris) => baris.id === movePOId);
     return boxes.filter(
-      (b) => b.status !== "CANCELLED" && b.id !== currentPO?.box_id,
+      (box) => box.status !== "CANCELLED" && box.id !== currentPO?.box_id,
     );
   }, [boxes, movePOId, data]);
 
@@ -721,7 +721,7 @@ export default function POListPage() {
                                       <button
                                         onClick={() => {
                                           const next = activeSelected.filter(
-                                            (s) => s !== v,
+                                            (nilaiAktif) => nilaiAktif !== v,
                                           );
                                           header.column.setFilterValue(
                                             next.length ? next : undefined,
@@ -856,10 +856,10 @@ export default function POListPage() {
                   <SelectValue placeholder="Pilih box tujuan…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {moveTargetBoxes.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.no_gungyu || "Draft"} — Tahun {b.tahun}{" "}
-                      {b.location_code ? `(${b.location_code})` : ""}
+                  {moveTargetBoxes.map((box) => (
+                    <SelectItem key={box.id} value={box.id}>
+                      {box.no_gungyu || "Draft"} — Tahun {box.tahun}{" "}
+                      {box.location_code ? `(${box.location_code})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

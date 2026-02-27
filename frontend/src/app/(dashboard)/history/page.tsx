@@ -35,13 +35,13 @@ export default function HistoryPage() {
   const { data: bins = [] } = useBins();
 
   function getBoxLabel(boxId: string) {
-    const box = boxes.find((b) => b.id === boxId);
+    const box = boxes.find((box) => box.id === boxId);
     return box?.no_gungyu ?? `Box ${box?.tahun ?? boxId}`;
   }
 
   function getBinLabel(binId: string | null) {
     if (!binId) return "—";
-    const bin = bins.find((b) => b.id === binId);
+    const bin = bins.find((bin) => bin.id === binId);
     return bin?.bin_code ?? binId;
   }
 

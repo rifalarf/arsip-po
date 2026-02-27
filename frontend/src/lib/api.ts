@@ -121,7 +121,7 @@ export async function apiCreateBox(
 
   const currentYear = new Date().getFullYear();
   const invalidTahun = entries.find(
-    (e) => isNaN(e.tahun) || e.tahun < 2000 || e.tahun > currentYear + 1,
+    (entri) => isNaN(entri.tahun) || entri.tahun < 2000 || entri.tahun > currentYear + 1,
   );
   if (invalidTahun) {
     return {
@@ -130,9 +130,9 @@ export async function apiCreateBox(
     };
   }
 
-  const noPOs = entries.map((e) => e.no_po);
-  const uniqueInBatch = new Set(noPOs);
-  if (uniqueInBatch.size !== noPOs.length) {
+  const noPOs = entries.map((entri) => entri.no_po);
+  const noPOUnikDalamBatch = new Set(noPOs);
+  if (noPOUnikDalamBatch.size !== noPOs.length) {
     return { success: false, message: "Ada NO. PO yang duplikat dalam input." };
   }
 
@@ -143,15 +143,15 @@ export async function apiCreateBox(
     .in("no_po", noPOs);
 
   if (existingPOs && existingPOs.length > 0) {
-    const dups = existingPOs.map((p) => p.no_po);
+    const noPODuplikat = existingPOs.map((po) => po.no_po);
     return {
       success: false,
-      message: `NO. PO sudah ada dalam sistem: ${dups.join(", ")}`,
+      message: `NO. PO sudah ada dalam sistem: ${noPODuplikat.join(", ")}`,
     };
   }
 
   // Generate no_gungyu via DB function
-  const { data: gungyuResult, error: gungyuError } =
+  const { data: hasilNoGungyu, error: gungyuError } =
     await supabase.rpc("generate_no_gungyu");
   if (gungyuError) {
     return {
@@ -159,13 +159,13 @@ export async function apiCreateBox(
       message: `Gagal generate No Gungyu: ${gungyuError.message}`,
     };
   }
-  const noGungyu = gungyuResult as string;
+  const noGungyu = hasilNoGungyu as string;
 
   const boxTahun = entries[0].tahun;
-  const now = new Date().toISOString();
+  const waktuSekarang = new Date().toISOString();
 
   // Insert box (directly ARCHIVED, no location yet)
-  const { data: newBox, error: boxError } = await supabase
+  const { data: boxBaru, error: boxError } = await supabase
     .from("boxes")
     .insert({
       owner_id: user.id,
@@ -175,9 +175,9 @@ export async function apiCreateBox(
       no_gungyu: noGungyu,
       bin_id: null,
       location_code: null,
-      created_at: now,
-      finalized_at: now,
-      archived_at: now,
+      created_at: waktuSekarang,
+      finalized_at: waktuSekarang,
+      archived_at: waktuSekarang,
     })
     .select()
     .single();
@@ -190,19 +190,19 @@ export async function apiCreateBox(
   }
 
   // Insert POs
-  const newPOs = entries.map((entry) => ({
+  const daftarPOBaru = entries.map((entry) => ({
     no_po: entry.no_po,
-    box_id: newBox.id,
+    box_id: boxBaru.id,
     tahun: entry.tahun,
     nama_barang: "",
     dok_date: "",
     keterangan: "",
     buyer_name: user.name,
     borrow_status: "AVAILABLE" as const,
-    created_at: now,
+    created_at: waktuSekarang,
   }));
 
-  const { error: posError } = await supabase.from("pos").insert(newPOs);
+  const { error: posError } = await supabase.from("pos").insert(daftarPOBaru);
   if (posError) {
     return {
       success: false,
@@ -213,54 +213,54 @@ export async function apiCreateBox(
   // ---- Auto-assign bin (Fill Sequential) ----
   try {
     // 1. Fetch all active bins sorted by bin_code
-    const { data: bins } = await supabase
+    const { data: daftarBin } = await supabase
       .from("bins")
       .select("id, bin_code, max_boxes")
       .eq("is_active", true)
       .order("bin_code", { ascending: true });
 
-    if (bins && bins.length > 0) {
+    if (daftarBin && daftarBin.length > 0) {
       // 2. Count current occupancy per bin
-      const binIds = bins.map((b) => b.id);
-      const { data: occupancy } = await supabase
+      const daftarIdBin = daftarBin.map((bin) => bin.id);
+      const { data: dataOkupansi } = await supabase
         .from("boxes")
         .select("bin_id")
-        .in("bin_id", binIds)
+        .in("bin_id", daftarIdBin)
         .not("bin_id", "is", null);
 
-      const countMap: Record<string, number> = {};
-      if (occupancy) {
-        for (const row of occupancy) {
-          countMap[row.bin_id] = (countMap[row.bin_id] || 0) + 1;
+      const jumlahBoxPerBin: Record<string, number> = {};
+      if (dataOkupansi) {
+        for (const dataBox of dataOkupansi) {
+          jumlahBoxPerBin[dataBox.bin_id] = (jumlahBoxPerBin[dataBox.bin_id] || 0) + 1;
         }
       }
 
       // 3. Find first bin with available capacity
-      const target = bins.find((b) => {
-        const used = countMap[b.id] || 0;
-        return used < (b.max_boxes ?? 1);
+      const binTerpilih = daftarBin.find((bin) => {
+        const jumlahTerpakai = jumlahBoxPerBin[bin.id] || 0;
+        return jumlahTerpakai < (bin.max_boxes ?? 1);
       });
 
-      if (target) {
+      if (binTerpilih) {
         // 4. Update box with assigned bin
         await supabase
           .from("boxes")
-          .update({ bin_id: target.id, location_code: target.bin_code })
-          .eq("id", newBox.id);
+          .update({ bin_id: binTerpilih.id, location_code: binTerpilih.bin_code })
+          .eq("id", boxBaru.id);
 
         // 5. Record in box_location_history
         await supabase.from("box_location_history").insert({
-          box_id: newBox.id,
-          bin_id: target.id,
-          location_code: target.bin_code,
+          box_id: boxBaru.id,
+          bin_id: binTerpilih.id,
+          location_code: binTerpilih.bin_code,
           action: "PLACE",
           performed_by: user.id,
-          performed_at: now,
+          performed_at: waktuSekarang,
         });
 
         return {
           success: true,
-          message: `Arsip ${noGungyu} dibuat dengan ${entries.length} PO (lokasi ${target.bin_code}).`,
+          message: `Arsip ${noGungyu} dibuat dengan ${entries.length} PO (lokasi ${binTerpilih.bin_code}).`,
         };
       }
     }
@@ -320,7 +320,7 @@ export async function apiAssignBoxToBin(
     };
   }
 
-  const now = new Date().toISOString();
+  const waktuSekarang = new Date().toISOString();
 
   const { error: updateError } = await supabase
     .from("boxes")
@@ -342,7 +342,7 @@ export async function apiAssignBoxToBin(
     from_bin_id: null,
     to_bin_id: binId,
     moved_by: userName,
-    moved_at: now,
+    moved_at: waktuSekarang,
     notes: "Penempatan awal",
   });
 
@@ -392,8 +392,8 @@ export async function apiRelocateBox(
     return { success: false, message: `Bin ${bin.bin_code} sudah penuh.` };
   }
 
-  const prevBinId = box.bin_id;
-  const now = new Date().toISOString();
+  const binIdSebelumnya = box.bin_id;
+  const waktuSekarang = new Date().toISOString();
 
   const { error: updateError } = await supabase
     .from("boxes")
@@ -409,10 +409,10 @@ export async function apiRelocateBox(
 
   await supabase.from("box_location_history").insert({
     box_id: boxId,
-    from_bin_id: prevBinId,
+    from_bin_id: binIdSebelumnya,
     to_bin_id: newBinId,
     moved_by: userName,
-    moved_at: now,
+    moved_at: waktuSekarang,
     notes: notes || "Relokasi box",
   });
 
@@ -451,8 +451,8 @@ export async function apiMovePOToBox(
   if (po.box_id === targetBoxId)
     return { success: false, message: "PO sudah ada di box ini." };
 
-  const prevBoxId = po.box_id;
-  const now = new Date().toISOString();
+  const boxIdSebelumnya = po.box_id;
+  const waktuSekarang = new Date().toISOString();
 
   const { error: updateError } = await supabase
     .from("pos")
@@ -469,10 +469,10 @@ export async function apiMovePOToBox(
   await supabase.from("po_transfer_history").insert({
     po_id: poId,
     no_po: po.no_po,
-    from_box_id: prevBoxId,
+    from_box_id: boxIdSebelumnya,
     to_box_id: targetBoxId,
     moved_by: userName,
-    moved_at: now,
+    moved_at: waktuSekarang,
     reason: reason || "Dipindahkan oleh admin",
   });
 
@@ -617,13 +617,13 @@ export async function apiAddRack(
   code: string,
   name: string,
 ): Promise<ActionResult> {
-  const trimCode = code.trim().toUpperCase();
-  if (!trimCode)
+  const kodeTerformat = code.trim().toUpperCase();
+  if (!kodeTerformat)
     return { success: false, message: "Kode rack tidak boleh kosong." };
 
   const { error } = await supabase.from("racks").insert({
-    code: trimCode,
-    name: name.trim() || `Rack ${trimCode}`,
+    code: kodeTerformat,
+    name: name.trim() || `Rack ${kodeTerformat}`,
     is_active: true,
   });
 
@@ -631,20 +631,20 @@ export async function apiAddRack(
     if (error.code === "23505") {
       return {
         success: false,
-        message: `Rack dengan kode ${trimCode} sudah ada.`,
+        message: `Rack dengan kode ${kodeTerformat} sudah ada.`,
       };
     }
     return { success: false, message: `Gagal tambah rack: ${error.message}` };
   }
-  return { success: true, message: `Rack ${trimCode} berhasil ditambahkan.` };
+  return { success: true, message: `Rack ${kodeTerformat} berhasil ditambahkan.` };
 }
 
 export async function apiAddRow(
   rackId: string,
   code: string,
 ): Promise<ActionResult> {
-  const trimCode = code.trim();
-  if (!trimCode)
+  const kodeTerformat = code.trim();
+  if (!kodeTerformat)
     return { success: false, message: "Kode row tidak boleh kosong." };
 
   const { data: rack } = await supabase
@@ -656,21 +656,21 @@ export async function apiAddRow(
 
   const { error } = await supabase.from("rows").insert({
     rack_id: rackId,
-    code: trimCode,
+    code: kodeTerformat,
   });
 
   if (error) {
     if (error.code === "23505") {
       return {
         success: false,
-        message: `Row ${trimCode} sudah ada di rack ini.`,
+        message: `Row ${kodeTerformat} sudah ada di rack ini.`,
       };
     }
     return { success: false, message: `Gagal tambah row: ${error.message}` };
   }
   return {
     success: true,
-    message: `Row ${trimCode} berhasil ditambahkan ke ${rack.name}.`,
+    message: `Row ${kodeTerformat} berhasil ditambahkan ke ${rack.name}.`,
   };
 }
 
@@ -678,27 +678,27 @@ export async function apiAddLevel(
   rowId: string,
   code: string,
 ): Promise<ActionResult> {
-  const trimCode = code.trim().toUpperCase();
-  if (!trimCode)
+  const kodeTerformat = code.trim().toUpperCase();
+  if (!kodeTerformat)
     return { success: false, message: "Kode level tidak boleh kosong." };
 
   const { error } = await supabase.from("levels").insert({
     row_id: rowId,
-    code: trimCode,
+    code: kodeTerformat,
   });
 
   if (error) {
     if (error.code === "23505") {
       return {
         success: false,
-        message: `Level ${trimCode} sudah ada di row ini.`,
+        message: `Level ${kodeTerformat} sudah ada di row ini.`,
       };
     }
     return { success: false, message: `Gagal tambah level: ${error.message}` };
   }
   return {
     success: true,
-    message: `Level ${trimCode} berhasil ditambahkan.`,
+    message: `Level ${kodeTerformat} berhasil ditambahkan.`,
   };
 }
 
@@ -706,8 +706,8 @@ export async function apiAddBin(
   levelId: string,
   code: string,
 ): Promise<ActionResult> {
-  const trimCode = code.trim();
-  if (!trimCode)
+  const kodeTerformat = code.trim();
+  if (!kodeTerformat)
     return { success: false, message: "Kode bin tidak boleh kosong." };
 
   // Build bin_code from parent hierarchy
@@ -730,11 +730,11 @@ export async function apiAddBin(
 
   const rackCode = rack?.code ?? "";
   const rowCode = row?.code ?? "";
-  const binCode = `${rackCode}-${rowCode}-${level.code}-${trimCode}`;
+  const binCode = `${rackCode}-${rowCode}-${level.code}-${kodeTerformat}`;
 
   const { error } = await supabase.from("bins").insert({
     level_id: levelId,
-    code: trimCode,
+    code: kodeTerformat,
     bin_code: binCode,
     max_boxes: 1,
     is_active: true,
@@ -744,7 +744,7 @@ export async function apiAddBin(
     if (error.code === "23505") {
       return {
         success: false,
-        message: `Bin ${trimCode} sudah ada di level ini.`,
+        message: `Bin ${kodeTerformat} sudah ada di level ini.`,
       };
     }
     return { success: false, message: `Gagal tambah bin: ${error.message}` };

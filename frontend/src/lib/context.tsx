@@ -39,7 +39,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Restore session on mount — rely solely on onAuthStateChange (fires INITIAL_SESSION on subscribe)
   useEffect(() => {
-    let initialised = false;
+    let sudahDiinisialisasi = false;
 
     const {
       data: { subscription },
@@ -51,8 +51,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
       // Only flip loading off once (on the first event — INITIAL_SESSION)
-      if (!initialised) {
-        initialised = true;
+      if (!sudahDiinisialisasi) {
+        sudahDiinisialisasi = true;
         setLoading(false);
       }
     });
@@ -62,20 +62,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     // 1. Lookup email by username
-    const { data: userRow, error: lookupError } = await supabase
+    const { data: dataUser, error: lookupError } = await supabase
       .from("users")
       .select("email")
       .eq("username", username)
       .eq("is_active", true)
       .single();
 
-    if (lookupError || !userRow) {
+    if (lookupError || !dataUser) {
       throw new Error("Username tidak ditemukan");
     }
 
     // 2. Authenticate with Supabase Auth
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: userRow.email,
+      email: dataUser.email,
       password,
     });
 
@@ -99,7 +99,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 }
 
 export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error("useApp must be used within AppProvider");
-  return ctx;
+  const konteks = useContext(AppContext);
+  if (!konteks) throw new Error("useApp must be used within AppProvider");
+  return konteks;
 }

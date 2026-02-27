@@ -82,31 +82,31 @@ export function useBoxLocationHistory() {
 
 export function useBoxById(id: string): Box | undefined {
   const { data: boxes } = useBoxes();
-  return boxes?.find((b) => b.id === id);
+  return boxes?.find((box) => box.id === id);
 }
 
 export function usePOsByBoxId(boxId: string): PO[] {
   const { data: pos } = usePOs();
-  return pos?.filter((p) => p.box_id === boxId) ?? [];
+  return pos?.filter((po) => po.box_id === boxId) ?? [];
 }
 
 export function useBoxesByStatus(status: BoxStatus): Box[] {
   const { data: boxes } = useBoxes();
-  return boxes?.filter((b) => b.status === status) ?? [];
+  return boxes?.filter((box) => box.status === status) ?? [];
 }
 
 export function useBinById(id: string): Bin | undefined {
   const { data: bins } = useBins();
-  return bins?.find((b) => b.id === id);
+  return bins?.find((bin) => bin.id === id);
 }
 
 export function useOccupiedBinIds(): Set<string> {
   const { data: boxes } = useBoxes();
-  const ids = new Set<string>();
-  boxes?.forEach((b) => {
-    if (b.bin_id && b.status === "ARCHIVED") ids.add(b.bin_id);
+  const kumpulanIdBin = new Set<string>();
+  boxes?.forEach((box) => {
+    if (box.bin_id && box.status === "ARCHIVED") kumpulanIdBin.add(box.bin_id);
   });
-  return ids;
+  return kumpulanIdBin;
 }
 
 export function useRackLabel(binId: string): string {
@@ -115,28 +115,28 @@ export function useRackLabel(binId: string): string {
   const { data: rows } = useRows();
   const { data: racks } = useRacks();
 
-  const bin = bins?.find((b) => b.id === binId);
+  const bin = bins?.find((itemBin) => itemBin.id === binId);
   if (!bin) return "";
-  const level = levels?.find((l) => l.id === bin.level_id);
+  const level = levels?.find((itemLevel) => itemLevel.id === bin.level_id);
   if (!level) return bin.bin_code;
-  const row = rows?.find((r) => r.id === level.row_id);
-  if (!row) return bin.bin_code;
-  const rack = racks?.find((r) => r.id === row.rack_id);
-  if (!rack) return bin.bin_code;
-  return `${rack.name} / Row ${row.code} / Level ${level.code} / Bin ${bin.code}`;
+  const baris = rows?.find((itemBaris) => itemBaris.id === level.row_id);
+  if (!baris) return bin.bin_code;
+  const rak = racks?.find((itemRak) => itemRak.id === baris.rack_id);
+  if (!rak) return bin.bin_code;
+  return `${rak.name} / Row ${baris.code} / Level ${level.code} / Bin ${bin.code}`;
 }
 
 export function useSearchPO(query: string): PO[] {
   const { data: pos } = usePOs();
   if (!query.trim()) return [];
-  const q = query.toLowerCase();
+  const kataPencarian = query.toLowerCase();
   return (
     pos?.filter(
-      (p) =>
-        p.no_po.toLowerCase().includes(q) ||
-        p.nama_barang.toLowerCase().includes(q) ||
-        p.buyer_name.toLowerCase().includes(q) ||
-        p.keterangan.toLowerCase().includes(q),
+      (po) =>
+        po.no_po.toLowerCase().includes(kataPencarian) ||
+        po.nama_barang.toLowerCase().includes(kataPencarian) ||
+        po.buyer_name.toLowerCase().includes(kataPencarian) ||
+        po.keterangan.toLowerCase().includes(kataPencarian),
     ) ?? []
   );
 }

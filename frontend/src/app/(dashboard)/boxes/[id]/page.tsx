@@ -106,13 +106,13 @@ export default function BoxDetailPage({
 
   const occupiedBinIdsSet = occupiedBinIds;
   const availableBins = bins.filter(
-    (b) => b.is_active && !occupiedBinIdsSet.has(b.id),
+    (bin) => bin.is_active && !occupiedBinIdsSet.has(bin.id),
   );
   const allBinsExceptCurrent = bins.filter(
-    (b) => b.is_active && b.id !== box.bin_id && !occupiedBinIdsSet.has(b.id),
+    (bin) => bin.is_active && bin.id !== box.bin_id && !occupiedBinIdsSet.has(bin.id),
   );
   const otherBoxes = boxes.filter(
-    (b) => b.id !== box.id && b.status !== "CANCELLED",
+    (boxLain) => boxLain.id !== box.id && boxLain.status !== "CANCELLED",
   );
 
   const handleAssign = async () => {
@@ -264,9 +264,9 @@ export default function BoxDetailPage({
                         Tidak ada bin tersedia
                       </SelectItem>
                     ) : (
-                      availableBins.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          <span className="font-mono">{b.bin_code}</span>
+                      availableBins.map((bin) => (
+                        <SelectItem key={bin.id} value={bin.id}>
+                          <span className="font-mono">{bin.bin_code}</span>
                         </SelectItem>
                       ))
                     )}
@@ -426,9 +426,9 @@ export default function BoxDetailPage({
                       Tidak ada bin tersedia
                     </SelectItem>
                   ) : (
-                    allBinsExceptCurrent.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        <span className="font-mono">{b.bin_code}</span>
+                    allBinsExceptCurrent.map((bin) => (
+                      <SelectItem key={bin.id} value={bin.id}>
+                        <span className="font-mono">{bin.bin_code}</span>
                       </SelectItem>
                     ))
                   )}
@@ -465,7 +465,7 @@ export default function BoxDetailPage({
             <p className="text-sm text-muted-foreground">
               PO:{" "}
               <strong className="font-mono text-foreground">
-                {pos.find((p) => p.id === movePOId)?.no_po}
+                {pos.find((po) => po.id === movePOId)?.no_po}
               </strong>
             </p>
             <div className="space-y-1.5">
@@ -478,12 +478,12 @@ export default function BoxDetailPage({
                   <SelectValue placeholder="Pilih box tujuan…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {otherBoxes.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.no_gungyu ??
-                        `Box ${b.tahun} — ${b.owner_name.split(" ")[0]}`}
+                  {otherBoxes.map((boxLain) => (
+                    <SelectItem key={boxLain.id} value={boxLain.id}>
+                      {boxLain.no_gungyu ??
+                        `Box ${boxLain.tahun} — ${boxLain.owner_name.split(" ")[0]}`}
                       <span className="ml-2 text-muted-foreground text-xs">
-                        ({b.status})
+                        ({boxLain.status})
                       </span>
                     </SelectItem>
                   ))}

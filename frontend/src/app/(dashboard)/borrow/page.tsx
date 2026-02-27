@@ -43,21 +43,21 @@ export default function BorrowPage() {
   const [borrowNotes, setBorrowNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const borrowedPOs = pos.filter((p) => p.borrow_status === "BORROWED");
-  const activeLogs = borrowLogs.filter((l) => !l.returned_at);
+  const borrowedPOs = pos.filter((po) => po.borrow_status === "BORROWED");
+  const activeLogs = borrowLogs.filter((log) => !log.returned_at);
 
   // Searchable POs for borrowing (only AVAILABLE ones)
   const availablePOs = pos.filter(
-    (p) =>
-      p.borrow_status === "AVAILABLE" &&
+    (po) =>
+      po.borrow_status === "AVAILABLE" &&
       (searchQuery === "" ||
-        p.no_po.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.nama_barang.toLowerCase().includes(searchQuery.toLowerCase())),
+        po.no_po.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        po.nama_barang.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   const toggleBorrowPO = (id: string) => {
     setSelectedPOIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((idPO) => idPO !== id) : [...prev, id],
     );
   };
 
@@ -128,8 +128,8 @@ export default function BorrowPage() {
                 </TableHeader>
                 <TableBody>
                   {borrowedPOs.map((po) => {
-                    const log = activeLogs.find((l) => l.po_id === po.id);
-                    const box = boxes.find((b) => b.id === po.box_id);
+                    const log = activeLogs.find((log) => log.po_id === po.id);
+                    const box = boxes.find((box) => box.id === po.box_id);
                     return (
                       <TableRow key={po.id}>
                         <TableCell className="font-medium">

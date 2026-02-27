@@ -37,13 +37,13 @@ export default function BoxesPage() {
     tab === "all"
       ? boxes
       : tab === "no_location"
-        ? boxes.filter((b) => b.status === "ARCHIVED" && !b.bin_id)
-        : boxes.filter((b) => b.status === tab);
+        ? boxes.filter((box) => box.status === "ARCHIVED" && !box.bin_id)
+        : boxes.filter((box) => box.status === tab);
 
-  const countByStatus = (s: BoxStatus) =>
-    boxes.filter((b) => b.status === s).length;
+  const countByStatus = (statusFilter: BoxStatus) =>
+    boxes.filter((box) => box.status === statusFilter).length;
   const countNoLocation = boxes.filter(
-    (b) => b.status === "ARCHIVED" && !b.bin_id,
+    (box) => box.status === "ARCHIVED" && !box.bin_id,
   ).length;
 
   return (

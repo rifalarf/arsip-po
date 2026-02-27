@@ -22,33 +22,33 @@ import {
 // ---- Box mutations ----
 
 export function useCreateBox() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       entries: { tahun: number; no_po: string }[];
       user: { id: string; name: string };
     }) => apiCreateBox(vars.entries, vars.user),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.boxes });
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
     },
   });
 }
 
 export function useAssignBoxToBin() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { boxId: string; binId: string; userName: string }) =>
       apiAssignBoxToBin(vars.boxId, vars.binId, vars.userName),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.boxes });
-      qc.invalidateQueries({ queryKey: queryKeys.boxLocationHistory });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxLocationHistory });
     },
   });
 }
 
 export function useRelocateBox() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       boxId: string;
@@ -57,14 +57,14 @@ export function useRelocateBox() {
       userName: string;
     }) => apiRelocateBox(vars.boxId, vars.newBinId, vars.notes, vars.userName),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.boxes });
-      qc.invalidateQueries({ queryKey: queryKeys.boxLocationHistory });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxLocationHistory });
     },
   });
 }
 
 export function useMovePOToBox() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       poId: string;
@@ -74,14 +74,14 @@ export function useMovePOToBox() {
     }) =>
       apiMovePOToBox(vars.poId, vars.targetBoxId, vars.reason, vars.userName),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
-      qc.invalidateQueries({ queryKey: queryKeys.poTransferHistory });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.poTransferHistory });
     },
   });
 }
 
 export function useEditPO() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: {
       poId: string;
@@ -97,20 +97,20 @@ export function useEditPO() {
       };
     }) => apiEditPO(vars.poId, vars.fields),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
-      qc.invalidateQueries({ queryKey: queryKeys.boxes });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.boxes });
     },
   });
 }
 
 export function useDeletePO() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { poId: string }) => apiDeletePO(vars.poId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
-      qc.invalidateQueries({ queryKey: queryKeys.borrowLogs });
-      qc.invalidateQueries({ queryKey: queryKeys.poTransferHistory });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.borrowLogs });
+      queryClient.invalidateQueries({ queryKey: queryKeys.poTransferHistory });
     },
   });
 }
@@ -118,24 +118,24 @@ export function useDeletePO() {
 // ---- Borrow mutations ----
 
 export function useBorrowPO() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { poId: string; borrowerName: string; notes: string }) =>
       apiBorrowPO(vars.poId, vars.borrowerName, vars.notes),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
-      qc.invalidateQueries({ queryKey: queryKeys.borrowLogs });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.borrowLogs });
     },
   });
 }
 
 export function useReturnPO() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { poId: string }) => apiReturnPO(vars.poId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.pos });
-      qc.invalidateQueries({ queryKey: queryKeys.borrowLogs });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos });
+      queryClient.invalidateQueries({ queryKey: queryKeys.borrowLogs });
     },
   });
 }
@@ -143,85 +143,85 @@ export function useReturnPO() {
 // ---- Rack CRUD mutations ----
 
 export function useAddRack() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { code: string; name: string }) =>
       apiAddRack(vars.code, vars.name),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.racks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.racks });
     },
   });
 }
 
 export function useAddRow() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { rackId: string; code: string }) =>
       apiAddRow(vars.rackId, vars.code),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.rows });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rows });
     },
   });
 }
 
 export function useAddLevel() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { rowId: string; code: string }) =>
       apiAddLevel(vars.rowId, vars.code),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.levels });
+      queryClient.invalidateQueries({ queryKey: queryKeys.levels });
     },
   });
 }
 
 export function useAddBin() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { levelId: string; code: string }) =>
       apiAddBin(vars.levelId, vars.code),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.bins });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }
 
 export function useDeleteRack() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { rackId: string }) => apiDeleteRack(vars.rackId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.racks });
+      queryClient.invalidateQueries({ queryKey: queryKeys.racks });
     },
   });
 }
 
 export function useDeleteRow() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { rowId: string }) => apiDeleteRow(vars.rowId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.rows });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rows });
     },
   });
 }
 
 export function useDeleteLevel() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { levelId: string }) => apiDeleteLevel(vars.levelId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.levels });
+      queryClient.invalidateQueries({ queryKey: queryKeys.levels });
     },
   });
 }
 
 export function useDeleteBin() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (vars: { binId: string }) => apiDeleteBin(vars.binId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.bins });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }

@@ -64,7 +64,7 @@ function getPrefixSuggestions(value: string): typeof PO_PREFIXES {
   if (!value) return [];
   // Already at or beyond the full prefix length — no suggestion needed
   return PO_PREFIXES.filter(
-    (p) => p.prefix.startsWith(value) && value.length < p.prefix.length,
+    (prefixItem) => prefixItem.prefix.startsWith(value) && value.length < prefixItem.prefix.length,
   );
 }
 
@@ -72,7 +72,7 @@ export default function BuatBoxPage() {
   const { user } = useApp();
   const createBox = useCreateBox();
   const { data: users = [] } = useUsers();
-  const buyers = users.filter((u) => u.role === "buyer");
+  const buyers = users.filter((pengguna) => pengguna.role === "buyer");
   const isAdmin = user?.role === "admin" || user?.role === "buyer";
 
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
@@ -122,7 +122,7 @@ export default function BuatBoxPage() {
     const pasted = e.clipboardData.getData("text");
     const lines = pasted
       .split(/[\n,;\t]+/)
-      .map((l) => l.trim())
+      .map((baris) => baris.trim())
       .filter(Boolean);
     if (lines.length > 1) {
       e.preventDefault();
@@ -134,8 +134,8 @@ export default function BuatBoxPage() {
 
   const handleSubmit = () => {
     const entries = watchedEntries
-      .filter((f) => f.no_po.trim().length > 0)
-      .map((f) => ({ tahun: f.tahun, no_po: f.no_po.trim() }));
+      .filter((entri) => entri.no_po.trim().length > 0)
+      .map((entri) => ({ tahun: entri.tahun, no_po: entri.no_po.trim() }));
 
     if (entries.length === 0) {
       toast.error("Gagal", { description: "Minimal 1 NO. PO harus diisi." });
@@ -151,7 +151,7 @@ export default function BuatBoxPage() {
     // Determine the owner: for admin, use selected buyer; for buyer, use self
     let owner = { id: user.id, name: user.name };
     if (isAdmin) {
-      const selectedBuyer = buyers.find((b) => b.id === selectedOwnerId);
+      const selectedBuyer = buyers.find((pembeli) => pembeli.id === selectedOwnerId);
       if (!selectedBuyer) {
         toast.error("Gagal", {
           description: "Pilih PIC/Buyer terlebih dahulu.",
@@ -182,7 +182,7 @@ export default function BuatBoxPage() {
     }
   };
 
-  const filledCount = watchedEntries.filter((f) => f.no_po.trim()).length;
+  const filledCount = watchedEntries.filter((entri) => entri.no_po.trim()).length;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-8 animate-in fade-in duration-500">
@@ -242,9 +242,9 @@ export default function BuatBoxPage() {
                     <SelectValue placeholder="Pilih buyer…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buyers.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
+                    {buyers.map((pembeli) => (
+                      <SelectItem key={pembeli.id} value={pembeli.id}>
+                        {pembeli.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -423,7 +423,7 @@ export default function BuatBoxPage() {
               <div className="flex-1 rounded-lg bg-muted/50 p-3 text-center">
                 <p className="text-muted-foreground text-xs mb-0.5">Tahun</p>
                 <p className="font-bold text-xl">
-                  {[...new Set(previewEntries.map((e) => e.tahun))].join(", ")}
+                  {[...new Set(previewEntries.map((entri) => entri.tahun))].join(", ")}
                 </p>
               </div>
             </div>

@@ -45,12 +45,12 @@ export default function DashboardPage() {
   const totalPO = pos.length;
   const totalArchived = archivedBoxes.length;
   const noLocationCount = boxes.filter(
-    (b) => b.status === "ARCHIVED" && !b.bin_id,
+    (box) => box.status === "ARCHIVED" && !box.bin_id,
   ).length;
   const totalBorrowed = pos.filter(
-    (p) => p.borrow_status === "BORROWED",
+    (po) => po.borrow_status === "BORROWED",
   ).length;
-  const activeBorrows = borrowLogs.filter((l) => !l.returned_at).length;
+  const activeBorrows = borrowLogs.filter((log) => !log.returned_at).length;
   const occupiedBins = occupiedBinIds.size;
   const totalBins = bins.length;
 

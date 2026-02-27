@@ -63,7 +63,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user } = useApp();
 
-  const visibleItems = NAV_ITEMS.filter(
+  const itemMenuTampil = NAV_ITEMS.filter(
     (item) => user && item.roles.includes(user.role),
   );
 
@@ -104,7 +104,7 @@ export function Sidebar() {
         className="relative flex-1 space-y-0.5 px-3 py-5"
         aria-label="Menu utama"
       >
-        {visibleItems.map((item) => {
+        {itemMenuTampil.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
           return (
