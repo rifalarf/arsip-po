@@ -78,43 +78,35 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="animate-card" style={{ animationDelay: "0ms" }}>
-          <KpiCard
-            title="Total PO"
-            value={totalPO}
-            description="Dokumen terarsip"
-            icon={Package}
-          />
-        </div>
-        <div className="animate-card" style={{ animationDelay: "60ms" }}>
-          <KpiCard
-            title="Box Diarsipkan"
-            value={totalArchived}
-            description="Box tersimpan di rak"
-            icon={Boxes}
-          />
-        </div>
-        <div className="animate-card" style={{ animationDelay: "120ms" }}>
-          <KpiCard
-            title="Sedang Dipinjam"
-            value={totalBorrowed}
-            description={`${activeBorrows} peminjam aktif`}
-            icon={BookOpen}
-            highlight={totalBorrowed > 0}
-          />
-        </div>
-        <div className="animate-card" style={{ animationDelay: "180ms" }}>
-          <KpiCard
-            title="Kapasitas Rak"
-            value={
-              totalBins > 0
-                ? `${((occupiedBins / totalBins) * 100).toFixed(1)}%`
-                : "—"
-            }
-            description={`${occupiedBins}/${totalBins} bin terpakai`}
-            icon={Archive}
-          />
-        </div>
+        <KpiCard
+          title="Total PO"
+          value={totalPO}
+          description="Dokumen terarsip"
+          icon={Package}
+        />
+        <KpiCard
+          title="Box Diarsipkan"
+          value={totalArchived}
+          description="Box tersimpan di rak"
+          icon={Boxes}
+        />
+        <KpiCard
+          title="Sedang Dipinjam"
+          value={totalBorrowed}
+          description={`${activeBorrows} peminjam aktif`}
+          icon={BookOpen}
+          highlight={totalBorrowed > 0}
+        />
+        <KpiCard
+          title="Kapasitas Rak"
+          value={
+            totalBins > 0
+              ? `${((occupiedBins / totalBins) * 100).toFixed(1)}%`
+              : "—"
+          }
+          description={`${occupiedBins}/${totalBins} bin terpakai`}
+          icon={Archive}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-7">
@@ -245,7 +237,7 @@ function KpiCard({
         />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold tabular-nums text-primary">
+        <div className="text-2xl font-bold text-primary">
           {value}
         </div>
         <div className="flex items-center text-xs text-muted-foreground mt-1">

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/context";
 import { Archive, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -43,147 +50,97 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left brand panel — desktop only */}
-      <div
-        className="hidden lg:flex lg:w-[44%] flex-col justify-between p-12 relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(150deg, hsl(158,52%,11%) 0%, hsl(152,45%,15%) 55%, hsl(145,40%,20%) 100%)",
-        }}
-      >
-        {/* Grid texture */}
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,0.6) 40px,rgba(255,255,255,0.6) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,255,255,0.6) 40px,rgba(255,255,255,0.6) 41px)",
-          }}
-        />
-        {/* Decorative circle */}
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full opacity-10 bg-emerald-400" />
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full opacity-[0.07] bg-emerald-300" />
-
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/12 border border-white/15">
-            <Archive className="h-5 w-5 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-6">
+        {/* Header */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Archive className="h-8 w-8" />
+            <h1 className="text-2xl font-bold tracking-tight">Arsip</h1>
           </div>
-          <span className="text-white font-bold text-lg tracking-tight">
-            Arsip PO
-          </span>
-        </div>
-
-        <div className="relative space-y-4">
-          <h2 className="text-3xl font-bold text-white leading-snug">
-            Sistem Arsip
-            <br />
-            Purchase Order
-          </h2>
-          <p className="text-white/55 leading-relaxed">
-            Pengelolaan arsip dokumen PO Departemen Pengadaan secara digital,
-            terstruktur, dan mudah ditelusuri.
+          <p className="text-sm text-muted-foreground text-center">
+            Sistem Arsip PO — Pengadaan Barang dan Jasa
           </p>
         </div>
 
-        <p className="relative text-xs text-white/30 font-medium">
-          Departemen Pengadaan Barang dan Jasa
-        </p>
-      </div>
-
-      {/* Right form panel */}
-      <div className="flex flex-1 items-center justify-center bg-background p-8">
-        <div className="w-full max-w-sm space-y-8">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Archive className="h-7 w-7 text-primary" aria-hidden="true" />
-              <h1 className="text-xl font-bold tracking-tight">Arsip PO</h1>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Sistem Arsip PO — Pengadaan Barang dan Jasa
-            </p>
-          </div>
-
-          {/* Login form */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Masuk</h1>
-            <p className="text-sm text-muted-foreground">
-              Masukkan username dan password untuk melanjutkan
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="Masukkan username…"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={submitting}
-                autoComplete="username"
-                spellCheck={false}
-                required
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+        {/* Login form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Masuk</CardTitle>
+            <CardDescription>
+              Masukkan username dan password untuk masuk ke sistem
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password…"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="Masukkan username…"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={submitting}
-                  autoComplete="current-password"
+                  autoComplete="username"
+                  spellCheck={false}
                   required
-                  className="h-11 pr-10"
                 />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-                  onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword
-                    ? <EyeOff className="h-4 w-4" aria-hidden="true" />
-                    : <Eye className="h-4 w-4" aria-hidden="true" />}
-                </button>
               </div>
-            </div>
 
-            {error && (
-              <p className="text-sm text-destructive font-medium" role="alert">
-                {error}
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full h-11 font-semibold"
-              disabled={submitting || !username.trim() || !password}
-            >
-              {submitting ? (
-                <>
-                  <Loader2
-                    className="mr-2 h-4 w-4 animate-spin"
-                    aria-hidden="true"
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Masukkan password…"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={submitting}
+                    autoComplete="current-password"
+                    required
+                    className="pr-10"
                   />
-                  Masuk…
-                </>
-              ) : (
-                "Masuk"
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword
+                      ? <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      : <Eye className="h-4 w-4" aria-hidden="true" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-sm text-destructive font-medium" role="alert">
+                  {error}
+                </p>
               )}
-            </Button>
-          </form>
-        </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={submitting || !username.trim() || !password}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                    Masuk…
+                  </>
+                ) : (
+                  "Masuk"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
