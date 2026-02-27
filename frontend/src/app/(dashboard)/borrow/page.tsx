@@ -204,7 +204,9 @@ export default function BorrowPage() {
                         <TableCell className="font-medium">
                           {log.no_po}
                         </TableCell>
-                        <TableCell>{log.borrower_name}</TableCell>                          <TableCell>{log.department || "—"}</TableCell>                        <TableCell>
+                        <TableCell>{log.borrower_name}</TableCell>
+                        <TableCell>{log.department || "—"}</TableCell>
+                        <TableCell>
                           {new Date(log.borrowed_at).toLocaleDateString(
                             "id-ID",
                           )}

@@ -73,7 +73,7 @@ export default function BuatBoxPage() {
   const createBox = useCreateBox();
   const { data: users = [] } = useUsers();
   const buyers = users.filter((u) => u.role === "buyer");
-  const isAdmin = user?.role === "admin" || user?.role === "buyer";
+  const isAdmin = user?.role === "admin";
 
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
 
