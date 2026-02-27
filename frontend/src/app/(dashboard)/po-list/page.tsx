@@ -483,6 +483,7 @@ export default function POListPage() {
           <div className="flex items-center gap-1">
             <button
               title="Pindah PO"
+              aria-label="Pindah PO"
               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors"
               onClick={() => {
                 setMovePOId(row.original.id);
@@ -491,10 +492,11 @@ export default function POListPage() {
                 setMovePOOpen(true);
               }}
             >
-              <ArrowRightLeft className="h-3.5 w-3.5" />
+              <ArrowRightLeft className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
             <button
               title="Edit PO"
+              aria-label="Edit PO"
               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-amber-600 transition-colors"
               onClick={() => {
                 setEditPOData({
@@ -511,10 +513,11 @@ export default function POListPage() {
                 setEditPOOpen(true);
               }}
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
             <button
               title="Hapus PO"
+              aria-label="Hapus PO"
               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               onClick={() => {
                 setDeletePOData({
@@ -524,7 +527,7 @@ export default function POListPage() {
                 setDeletePOOpen(true);
               }}
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
         ),

@@ -155,9 +155,10 @@ function BinRow({
         variant="ghost"
         size="icon"
         className="h-6 w-6 text-muted-foreground hover:text-destructive"
+        aria-label={`Hapus bin ${bin.bin_code}`}
         onClick={() => onDelete(bin.id)}
       >
-        <Trash2 className="h-3 w-3" />
+        <Trash2 className="h-3 w-3" aria-hidden="true" />
       </Button>
     </div>
   );
@@ -421,6 +422,7 @@ export default function SettingsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        aria-label={`Hapus rak ${rack.code}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAsync(() =>
@@ -428,7 +430,7 @@ export default function SettingsPage() {
                           );
                         }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </div>
 
@@ -467,6 +469,7 @@ export default function SettingsPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                  aria-label={`Hapus row ${row.code}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleAsync(() =>
@@ -476,7 +479,10 @@ export default function SettingsPage() {
                                     );
                                   }}
                                 >
-                                  <Trash2 className="h-3 w-3" />
+                                  <Trash2
+                                    className="h-3 w-3"
+                                    aria-hidden="true"
+                                  />
                                 </Button>
                               </div>
 
@@ -517,6 +523,7 @@ export default function SettingsPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                            aria-label={`Hapus level ${lvl.code}`}
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleAsync(() =>
@@ -526,7 +533,10 @@ export default function SettingsPage() {
                                               );
                                             }}
                                           >
-                                            <Trash2 className="h-2.5 w-2.5" />
+                                            <Trash2
+                                              className="h-2.5 w-2.5"
+                                              aria-hidden="true"
+                                            />
                                           </Button>
                                         </div>
 

@@ -7,9 +7,9 @@ const supabaseAnonKey =
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,       // store session in localStorage → survives reload/close
-    autoRefreshToken: true,     // silently refresh access token before it expires
-    detectSessionInUrl: false,  // not using OAuth redirects
+    persistSession: true, // store session in localStorage → survives reload/close
+    autoRefreshToken: true, // silently refresh access token before it expires
+    detectSessionInUrl: false, // not using OAuth redirects
     storageKey: "arsip-po-auth",
   },
 });

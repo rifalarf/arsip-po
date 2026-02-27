@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchPO, useBoxes } from "@/hooks/queries";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Search as SearchIcon,
@@ -14,9 +15,26 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function SearchPage() {
+function SearchContent() {
   const { data: boxes = [] } = useBoxes();
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+
+  // Sync URL ↔ input: update URL 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (query.trim()) {
+        params.set("q", query.trim());
+      } else {
+        params.delete("q");
+      }
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, router, searchParams]);
 
   const results = useSearchPO(query);
 
@@ -67,10 +85,13 @@ export default function SearchPage() {
         >
           <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Ketik NO. PO, NO. GUNGYU, atau Nama Barang..."
+            id="search"
+            name="q"
+            placeholder="Ketik NO. PO, NO. GUNGYU, atau Nama Barang\u2026"
             className="h-14 pl-12 pr-4 text-lg rounded-full shadow-sm hover:shadow-md transition-shadow border-muted-foreground/20 focus-visible:ring-primary/20"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            autoComplete="off"
           />
         </div>
       </div>
@@ -160,5 +181,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense>
+      <SearchContent />
+    </Suspense>
   );
 }
