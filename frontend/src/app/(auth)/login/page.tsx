@@ -58,7 +58,7 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold tracking-tight">Arsip</h1>
           </div>
           <p className="text-sm text-muted-foreground text-center">
-            Sistem Arsip PO — Departemen Pengadaan
+            Sistem Arsip PO — Pengadaan Barang dan Jasa
           </p>
         </div>
 
