@@ -384,9 +384,10 @@ const COLUMNS = [
   columnHelper.accessor("keterangan", {
     header: "Keterangan",
     enableColumnFilter: false,
+    size: 200,
     cell: (info) =>
       info.getValue() ? (
-        <span className="italic text-muted-foreground text-xs">
+        <span className="italic text-muted-foreground text-xs whitespace-normal break-words line-clamp-3">
           {info.getValue()}
         </span>
       ) : (
@@ -910,7 +911,10 @@ export default function POListPage() {
                   type="number"
                   value={editPOData.tahun}
                   onChange={(e) =>
-                    setEditPOData({ ...editPOData, tahun: Number(e.target.value) })
+                    setEditPOData({
+                      ...editPOData,
+                      tahun: Number(e.target.value),
+                    })
                   }
                   placeholder="Tahun…"
                 />

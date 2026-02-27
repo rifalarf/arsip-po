@@ -9,13 +9,10 @@ import {
   Boxes,
   BookOpen,
   Settings,
-  LogOut,
   List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useApp } from "@/lib/context";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 const NAV_ITEMS = [
   {
@@ -64,7 +61,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useApp();
+  const { user } = useApp();
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => user && item.roles.includes(user.role),
@@ -104,23 +101,8 @@ export function Sidebar() {
       {/* Footer */}
       <div className="border-t border-primary-foreground/10 px-3 py-4">
         {user && (
-          <div className="space-y-3">
-            <div className="px-3">
-              <p className="text-sm font-medium opacity-90">{user.name}</p>
-              <p className="text-xs text-primary-foreground/60 capitalize">
-                {user.role}
-              </p>
-            </div>
-            <Separator className="bg-primary-foreground/10" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2 text-primary-foreground/70 hover:text-destructive hover:bg-destructive/10"
-              onClick={() => logout()}
-            >
-              <LogOut className="h-4 w-4" />
-              Keluar
-            </Button>
+          <div className="px-3">
+            <p className="text-sm font-medium opacity-90">{user.name}</p>
           </div>
         )}
       </div>
