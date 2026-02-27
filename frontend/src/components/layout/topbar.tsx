@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sidebar } from "./sidebar";
+import { Sidebar, SidebarContent } from "./sidebar";
 
 export function Topbar() {
   const { user, logout } = useApp();
@@ -35,9 +35,9 @@ export function Topbar() {
             <Menu className="h-5 w-5" aria-hidden="true" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side="left" className="p-0 w-64 overflow-hidden">
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-          <Sidebar />
+          <SidebarContent />
         </SheetContent>
       </Sheet>
 

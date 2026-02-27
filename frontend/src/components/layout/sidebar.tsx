@@ -59,7 +59,7 @@ const NAV_ITEMS = [
   },
 ];
 
-export function Sidebar() {
+export function SidebarContent() {
   const pathname = usePathname();
   const { user } = useApp();
 
@@ -68,8 +68,8 @@ export function Sidebar() {
   );
 
   return (
-    <aside
-      className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 shadow-xl"
+    <div
+      className="flex flex-col h-full relative overflow-hidden"
       style={{
         background:
           "linear-gradient(160deg, hsl(158,52%,11%) 0%, hsl(152,45%,15%) 60%, hsl(148,40%,18%) 100%)",
@@ -146,6 +146,14 @@ export function Sidebar() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 shadow-xl">
+      <SidebarContent />
     </aside>
   );
 }
