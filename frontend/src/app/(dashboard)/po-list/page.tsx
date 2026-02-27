@@ -562,7 +562,8 @@ export default function POListPage() {
         dok_date: editPOData.dok_date,
         buyer_name: editPOData.pic,
         keterangan: editPOData.keterangan,
-        borrow_status: editPOData.status === "Dipinjam" ? "BORROWED" : "AVAILABLE",
+        borrow_status:
+          editPOData.status === "Dipinjam" ? "BORROWED" : "AVAILABLE",
         no_gungyu: editPOData.no_gungyu,
       },
     });
@@ -905,23 +906,14 @@ export default function POListPage() {
               {/* Tahun */}
               <div className="space-y-1.5">
                 <Label>Tahun</Label>
-                <Select
-                  value={String(editPOData.tahun)}
-                  onValueChange={(v) =>
-                    setEditPOData({ ...editPOData, tahun: Number(v) })
+                <Input
+                  type="number"
+                  value={editPOData.tahun}
+                  onChange={(e) =>
+                    setEditPOData({ ...editPOData, tahun: Number(e.target.value) })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih tahun…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 11 }, (_, i) => 2021 + i).map((y) => (
-                      <SelectItem key={y} value={String(y)}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Tahun…"
+                />
               </div>
               {/* No Gungyu */}
               <div className="space-y-1.5">
@@ -940,7 +932,10 @@ export default function POListPage() {
                 <Input
                   value={editPOData.nama_barang}
                   onChange={(e) =>
-                    setEditPOData({ ...editPOData, nama_barang: e.target.value })
+                    setEditPOData({
+                      ...editPOData,
+                      nama_barang: e.target.value,
+                    })
                   }
                   placeholder="Nama barang…"
                 />
