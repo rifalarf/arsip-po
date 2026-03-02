@@ -1,15 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useBoxes,
-  usePOs,
-  useBorrowLogs,
-  useBins,
-  useOccupiedBinIds,
-  useBoxesByStatus,
-  useBoxLocationHistory,
-} from "@/hooks/queries";
+import { useDashboardMetrics } from "@/hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Archive,
@@ -26,11 +18,11 @@ import {
   TrendingDown,
   MapPin,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BoxStatus } from "@/lib/types";
-import { useMemo } from "react";
 
 const STATUS_DOT: Record<BoxStatus, string> = {
   ARCHIVED: "bg-green-500",
@@ -48,131 +40,66 @@ const MONTH_NAMES = [
 ];
 
 export default function DashboardPage() {
-  const { data: boxes = [] } = useBoxes();
-  const { data: pos = [] } = usePOs();
-  const { data: borrowLogs = [] } = useBorrowLogs();
-  const { data: bins = [] } = useBins();
-  const { data: boxLocationHistory = [] } = useBoxLocationHistory();
-  const occupiedBinIds = useOccupiedBinIds();
-  const archivedBoxes = useBoxesByStatus("ARCHIVED");
+  const { data: metrics, isLoading, isError } = useDashboardMetrics();
 
-  // ---- Existing KPIs ----
-  const totalPO = pos.length;
-  const totalArchived = archivedBoxes.length;
-  const totalBorrowed = pos.filter((p) => p.borrow_status === "BORROWED").length;
-  const activeBorrows = borrowLogs.filter((l) => !l.returned_at).length;
-  const occupiedBins = occupiedBinIds.size;
-  const totalBins = bins.length;
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isError || !metrics) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center text-destructive">
+        Gagal memuat data dashboard.
+      </div>
+    );
+  }
+
+  // ---- Base KPIs ----
+  const {
+    total_po: totalPO,
+    total_archived: totalArchived,
+    total_borrowed: totalBorrowed,
+    active_borrows: activeBorrows,
+    occupied_bins: occupiedBins,
+    total_bins: totalBins,
+  } = metrics;
+
   const availableBins = totalBins - occupiedBins;
 
   // ---- New KPIs ----
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
-  const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
-
-  const thisMonthBoxes = boxes.filter((b) => {
-    const d = new Date(b.created_at);
-    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
-  }).length;
-
-  const lastMonthBoxes = boxes.filter((b) => {
-    const d = new Date(b.created_at);
-    return (
-      d.getMonth() === lastMonthDate.getMonth() &&
-      d.getFullYear() === lastMonthDate.getFullYear()
-    );
-  }).length;
-
+  const thisMonthBoxes = metrics.this_month_boxes;
+  const lastMonthBoxes = metrics.last_month_boxes;
   const monthDiff = thisMonthBoxes - lastMonthBoxes;
   const monthTrendLabel =
     lastMonthBoxes === 0
       ? "Bulan berjalan"
       : `${monthDiff >= 0 ? "+" : ""}${monthDiff} vs bulan lalu`;
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const overdueBorrows = borrowLogs.filter(
-    (l) => !l.returned_at && new Date(l.borrowed_at) < sevenDaysAgo,
-  ).length;
+  const overdueBorrows = metrics.overdue_borrows;
 
   // ---- 6-month trend ----
-  const sixMonthTrend = useMemo(() => {
-    const months: { label: string; count: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(thisYear, thisMonth - i, 1);
-      const m = d.getMonth();
-      const y = d.getFullYear();
-      const count = boxes.filter((b) => {
-        const bd = new Date(b.created_at);
-        return bd.getMonth() === m && bd.getFullYear() === y;
-      }).length;
-      months.push({ label: MONTH_NAMES[m], count });
-    }
-    return months;
-  }, [boxes, thisMonth, thisYear]);
+  const sixMonthTrend = metrics.six_month_trend.map(m => ({
+    label: MONTH_NAMES[m.month_val - 1],
+    count: m.count
+  }));
 
   const maxTrend = Math.max(...sixMonthTrend.map((m) => m.count), 1);
 
   // ---- Top 3 Buyers ----
-  const buyerMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    pos.forEach((p) => {
-      map[p.buyer_name] = (map[p.buyer_name] || 0) + 1;
-    });
-    return Object.entries(map)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-  }, [pos]);
+  const buyerMap = metrics.top_buyers;
 
-  // ---- Recent Activities (last 5, mixed events) ----
-  type Activity = {
-    type: "create" | "relocate" | "borrow" | "return";
-    label: string;
-    detail: string;
-    time: Date;
-  };
+  // ---- Recent Activities ----
+  type ActivityType = "create" | "relocate" | "borrow" | "return";
+  const activities = metrics.activities.map(act => ({
+    ...act,
+    time: new Date(act.time)
+  }));
 
-  const activities = useMemo((): Activity[] => {
-    const list: Activity[] = [];
-
-    boxes.slice(0, 15).forEach((b) => {
-      list.push({
-        type: "create",
-        label: b.no_gungyu ?? `Box ${b.tahun}`,
-        detail: `Arsip dibuat oleh ${b.owner_name}`,
-        time: new Date(b.created_at),
-      });
-    });
-
-    borrowLogs.slice(0, 15).forEach((l) => {
-      list.push({
-        type: "borrow",
-        label: l.no_po,
-        detail: `Dipinjam oleh ${l.borrower_name}`,
-        time: new Date(l.borrowed_at),
-      });
-      if (l.returned_at) {
-        list.push({
-          type: "return",
-          label: l.no_po,
-          detail: `Dikembalikan`,
-          time: new Date(l.returned_at),
-        });
-      }
-    });
-
-    boxLocationHistory.slice(0, 15).forEach((h) => {
-      const box = boxes.find((b) => b.id === h.box_id);
-      list.push({
-        type: "relocate",
-        label: box?.no_gungyu ?? "Box",
-        detail: `Dipindahkan ke ${h.to_bin_id}`,
-        time: new Date(h.moved_at),
-      });
-    });
-
-    return list.sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 5);
-  }, [boxes, borrowLogs, boxLocationHistory]);
+  const recentBoxes = metrics.recent_boxes;
 
   function relativeTime(date: Date): string {
     const diff = Date.now() - date.getTime();
@@ -184,7 +111,7 @@ export default function DashboardPage() {
     return `${days}h lalu`;
   }
 
-  const activityIcons: Record<Activity["type"], React.ReactNode> = {
+  const activityIcons: Record<ActivityType, React.ReactNode> = {
     create: <PackagePlus className="h-3.5 w-3.5 text-primary" />,
     relocate: <MapPin className="h-3.5 w-3.5 text-blue-500" />,
     borrow: <BookOpen className="h-3.5 w-3.5 text-amber-500" />,
@@ -327,35 +254,31 @@ export default function DashboardPage() {
           </h2>
           <Card className="shadow-sm border-none bg-secondary/30">
             <CardContent className="p-4 space-y-2">
-              {boxes
-                .slice()
-                .reverse()
-                .slice(0, 4)
-                .map((box) => (
-                  <Link key={box.id} href={`/boxes/${box.id}`}>
-                    <div className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm transition-transform hover:scale-[1.02] cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "w-2 h-2 rounded-full shrink-0",
-                            STATUS_DOT[box.status],
-                          )}
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {box.no_gungyu ?? `Box ${box.tahun}`}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {box.location_code ?? "Belum ditempatkan"}
-                          </p>
-                        </div>
+              {recentBoxes.map((box) => (
+                <Link key={box.id} href={`/boxes/${box.id}`}>
+                  <div className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm transition-transform hover:scale-[1.02] cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          STATUS_DOT[box.status],
+                        )}
+                      />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {box.no_gungyu ?? `Box ${box.tahun}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {box.location_code ?? "Belum ditempatkan"}
+                        </p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground border rounded-full px-2 py-0.5">
-                        {STATUS_LABELS[box.status]}
-                      </span>
                     </div>
-                  </Link>
-                ))}
+                    <span className="text-[10px] text-muted-foreground border rounded-full px-2 py-0.5">
+                      {STATUS_LABELS[box.status]}
+                    </span>
+                  </div>
+                </Link>
+              ))}
               <Link href="/boxes">
                 <Button
                   variant="ghost"
@@ -392,7 +315,10 @@ export default function DashboardPage() {
                       <span className="text-xs font-medium text-muted-foreground h-4">
                         {m.count > 0 ? m.count : ""}
                       </span>
-                      <div className="w-full relative" style={{ height: "72px" }}>
+                      <div
+                        className="w-full relative"
+                        style={{ height: "72px" }}
+                      >
                         <div
                           className={cn(
                             "absolute bottom-0 w-full rounded-t transition-all duration-500",
@@ -418,9 +344,8 @@ export default function DashboardPage() {
                 })}
               </div>
               <p className="text-xs text-muted-foreground mt-3 text-center">
-                Total{" "}
-                {sixMonthTrend.reduce((s, m) => s + m.count, 0)} arsip dalam 6
-                bulan terakhir
+                Total {sixMonthTrend.reduce((s, m) => s + m.count, 0)} arsip
+                dalam 6 bulan terakhir
               </p>
             </CardContent>
           </Card>
@@ -439,7 +364,7 @@ export default function DashboardPage() {
                   Belum ada data buyer.
                 </p>
               ) : (
-                buyerMap.map(([name, count], i) => {
+                buyerMap.map(({ buyer_name: name, count }, i) => {
                   const pct =
                     totalPO > 0 ? Math.round((count / totalPO) * 100) : 0;
                   return (
@@ -534,4 +459,3 @@ function KpiCard({
     </Card>
   );
 }
-

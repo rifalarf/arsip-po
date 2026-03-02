@@ -41,13 +41,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let initialised = false;
 
+    // Safety timeout: if Supabase never responds (unreachable, DNS failure, etc.),
+    // force loading to stop so the user isn't stuck on a spinner forever.
+    const timeout = setTimeout(() => {
+      if (!initialised) {
+        console.warn(
+          "[AppProvider] Auth initialisation timed out after 5 s — treating user as unauthenticated.",
+        );
+        initialised = true;
+        setLoading(false);
+      }
+    }, 5000);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setUser(profile);
-      } else {
+      try {
+        if (session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          setUser(profile);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("[AppProvider] Failed to fetch user profile:", err);
         setUser(null);
       }
       // Only flip loading off once (on the first event — INITIAL_SESSION)
@@ -57,7 +74,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {

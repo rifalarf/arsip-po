@@ -15,6 +15,7 @@ import {
   BoxLocationHistory,
   ActionResult,
   User,
+  DashboardMetrics,
 } from "./types";
 
 // ============================================================
@@ -104,6 +105,12 @@ export async function fetchBoxLocationHistory(): Promise<BoxLocationHistory[]> {
     .order("moved_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
+  const { data, error } = await supabase.rpc("get_dashboard_metrics");
+  if (error) throw error;
+  return data as DashboardMetrics;
 }
 
 // ============================================================
@@ -261,6 +268,13 @@ export async function apiCreateBox(
         return {
           success: true,
           message: `Arsip ${noGungyu} dibuat dengan ${entries.length} PO (lokasi ${target.bin_code}).`,
+          data: {
+            boxId: newBox.id,
+            no_gungyu: noGungyu,
+            tahun: boxTahun,
+            location_code: target.bin_code,
+            pos: entries.map((e) => e.no_po),
+          },
         };
       }
     }
@@ -271,6 +285,13 @@ export async function apiCreateBox(
   return {
     success: true,
     message: `Arsip ${noGungyu} dibuat dengan ${entries.length} PO.`,
+    data: {
+      boxId: newBox.id,
+      no_gungyu: noGungyu,
+      tahun: boxTahun,
+      location_code: null,
+      pos: entries.map((e) => e.no_po),
+    },
   };
 }
 

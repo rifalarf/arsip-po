@@ -115,9 +115,10 @@ export interface BoxLocationHistory {
 }
 
 // ---- Action Result ----
-export interface ActionResult {
+export interface ActionResult<T = any> {
   success: boolean;
   message: string;
+  data?: T;
 }
 
 // ---- Search ----
@@ -126,4 +127,40 @@ export interface SearchResult extends PO {
   box_status: BoxStatus;
   location_code: string | null;
   no_gungyu: string | null;
+}
+
+// ---- Dashboard Metrics ----
+export interface DashboardMetrics {
+  total_po: number;
+  total_archived: number;
+  total_borrowed: number;
+  active_borrows: number;
+  occupied_bins: number;
+  total_bins: number;
+  this_month_boxes: number;
+  last_month_boxes: number;
+  overdue_borrows: number;
+  six_month_trend: {
+    month_start: string;
+    month_val: number;
+    year_val: number;
+    count: number;
+  }[];
+  top_buyers: {
+    buyer_name: string;
+    count: number;
+  }[];
+  activities: {
+    type: "create" | "relocate" | "borrow" | "return";
+    label: string;
+    detail: string;
+    time: string;
+  }[];
+  recent_boxes: {
+    id: string;
+    status: BoxStatus;
+    no_gungyu: string | null;
+    tahun: number;
+    location_code: string | null;
+  }[];
 }

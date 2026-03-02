@@ -63,7 +63,12 @@ export default function BorrowPage() {
   };
 
   const handleBorrow = async () => {
-    if (selectedPOIds.length === 0 || !borrowerName.trim() || !borrowerDepartment.trim()) return;
+    if (
+      selectedPOIds.length === 0 ||
+      !borrowerName.trim() ||
+      !borrowerDepartment.trim()
+    )
+      return;
     for (const id of selectedPOIds) {
       await borrowPO.mutateAsync({
         poId: id,
@@ -237,16 +242,19 @@ export default function BorrowPage() {
       </Card>
 
       {/* Borrow Dialog */}
-      <Dialog open={borrowDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setSelectedPOIds([]);
-          setBorrowerName("");
-          setBorrowerDepartment("");
-          setBorrowNotes("");
-          setSearchQuery("");
-        }
-        setBorrowDialogOpen(open);
-      }}>
+      <Dialog
+        open={borrowDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedPOIds([]);
+            setBorrowerName("");
+            setBorrowerDepartment("");
+            setBorrowNotes("");
+            setSearchQuery("");
+          }
+          setBorrowDialogOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Pinjam PO</DialogTitle>
@@ -305,7 +313,9 @@ export default function BorrowPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="borrower-name">Nama Peminjam <span className="text-destructive">*</span></Label>
+              <Label htmlFor="borrower-name">
+                Nama Peminjam <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="borrower-name"
                 placeholder="Nama lengkap peminjam"
@@ -315,7 +325,9 @@ export default function BorrowPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="borrower-dept">Departemen <span className="text-destructive">*</span></Label>
+              <Label htmlFor="borrower-dept">
+                Departemen <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="borrower-dept"
                 placeholder="Contoh: Pengadaan, Keuangan, Produksi…"
@@ -325,7 +337,12 @@ export default function BorrowPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="borrow-notes">Keperluan <span className="text-muted-foreground text-xs font-normal">(opsional)</span></Label>
+              <Label htmlFor="borrow-notes">
+                Keperluan{" "}
+                <span className="text-muted-foreground text-xs font-normal">
+                  (opsional)
+                </span>
+              </Label>
               <Input
                 id="borrow-notes"
                 placeholder="Alasan atau keperluan peminjaman"
@@ -344,7 +361,11 @@ export default function BorrowPage() {
             </Button>
             <Button
               onClick={handleBorrow}
-              disabled={selectedPOIds.length === 0 || !borrowerName.trim() || !borrowerDepartment.trim()}
+              disabled={
+                selectedPOIds.length === 0 ||
+                !borrowerName.trim() ||
+                !borrowerDepartment.trim()
+              }
             >
               Pinjam{" "}
               {selectedPOIds.length > 0 ? `(${selectedPOIds.length})` : ""}

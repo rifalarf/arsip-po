@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useBoxes, usePOsByBoxId } from "@/hooks/queries";
+import { useBoxes, usePOs } from "@/hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { BoxStatus } from "@/lib/types";
-import { CalendarDays, MapPin, User2 } from "lucide-react";
+import { CalendarDays, MapPin, User2, Search, X, Box as BoxIcon, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABELS: Record<BoxStatus | "all" | "no_location", string> = {
@@ -24,69 +26,225 @@ const STATUS_COLORS: Record<BoxStatus, string> = {
 
 type TabValue = "all" | "no_location" | BoxStatus;
 
-function POCount({ boxId }: { boxId: string }) {
-  const pos = usePOsByBoxId(boxId);
-  return <>{pos.length}</>;
-}
-
 export default function BoxesPage() {
   const { data: boxes = [] } = useBoxes();
+  const { data: pos = [] } = usePOs();
   const [tab, setTab] = useState<TabValue>("all");
 
-  const filtered =
-    tab === "all"
-      ? boxes
-      : tab === "no_location"
-        ? boxes.filter((b) => b.status === "ARCHIVED" && !b.bin_id)
-        : boxes.filter((b) => b.status === tab);
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [picFilter, setPicFilter] = useState("all");
+  const [tahunFilter, setTahunFilter] = useState("all");
+  const [minPoCount, setMinPoCount] = useState("");
+  const [maxPoCount, setMaxPoCount] = useState("");
 
-  const countByStatus = (s: BoxStatus) =>
-    boxes.filter((b) => b.status === s).length;
-  const countNoLocation = boxes.filter(
-    (b) => b.status === "ARCHIVED" && !b.bin_id,
-  ).length;
+  const poCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    pos.forEach((po) => {
+      map.set(po.box_id, (map.get(po.box_id) || 0) + 1);
+    });
+    return map;
+  }, [pos]);
+
+  const uniquePics = useMemo(() => {
+    const pics = Array.from(new Set(boxes.map((b) => b.owner_name))).filter(Boolean);
+    return pics.sort((a, b) => a.localeCompare(b));
+  }, [boxes]);
+
+  const uniqueTahuns = useMemo(() => {
+    const tahuns = Array.from(new Set(boxes.map((b) => b.tahun.toString()))).filter(Boolean);
+    return tahuns.sort((a, b) => b.localeCompare(a));
+  }, [boxes]);
+
+  const filtered = useMemo(() => {
+    return boxes.filter((box) => {
+      // 1. Tab filter
+      if (tab === "no_location" && !(box.status === "ARCHIVED" && !box.bin_id)) return false;
+      if (tab !== "all" && tab !== "no_location" && box.status !== tab) return false;
+
+      // 2. Search filter
+      const query = searchQuery.toLowerCase();
+      if (query) {
+        const matchOwner = box.owner_name.toLowerCase().includes(query);
+        const matchTahun = box.tahun.toString().includes(query);
+        const matchNoGungyu = box.no_gungyu?.toLowerCase().includes(query) ?? false;
+        const matchLocation = box.location_code?.toLowerCase().includes(query) ?? false;
+        if (!matchOwner && !matchTahun && !matchNoGungyu && !matchLocation) return false;
+      }
+
+      // 3. PIC Filter
+      if (picFilter !== "all" && box.owner_name !== picFilter) return false;
+
+      // 4. Tahun Filter
+      if (tahunFilter !== "all" && box.tahun.toString() !== tahunFilter) return false;
+
+      // 5. PO Count Filter
+      const boxPoCount = poCountMap.get(box.id) || 0;
+      if (minPoCount !== "" && boxPoCount < parseInt(minPoCount, 10)) return false;
+      if (maxPoCount !== "" && boxPoCount > parseInt(maxPoCount, 10)) return false;
+
+      return true;
+    });
+  }, [boxes, tab, searchQuery, picFilter, tahunFilter, minPoCount, maxPoCount, poCountMap]);
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setPicFilter("all");
+    setTahunFilter("all");
+    setMinPoCount("");
+    setMaxPoCount("");
+  };
+
+  const hasActiveFilters =
+    searchQuery !== "" || picFilter !== "all" || tahunFilter !== "all" || minPoCount !== "" || maxPoCount !== "";
+
+  const countByStatus = (s: BoxStatus) => boxes.filter((b) => b.status === s).length;
+  const countNoLocation = boxes.filter((b) => b.status === "ARCHIVED" && !b.bin_id).length;
+
+  // KPI Metrics
+  const totalBoxes = boxes.length;
+  const archivedBoxes = countByStatus("ARCHIVED");
+  const cancelledBoxes = countByStatus("CANCELLED");
+  const totalPos = pos.length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Daftar Box</h1>
-        <p className="text-muted-foreground">
-          Semua box arsip PO ({boxes.length} total)
-        </p>
+        <p className="text-muted-foreground">Semua box arsip PO ({boxes.length} total)</p>
       </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Box</CardTitle>
+            <BoxIcon className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalBoxes}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Box Diarsipkan</CardTitle>
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{archivedBoxes}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Belum Ada Lokasi</CardTitle>
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{countNoLocation}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total PO</CardTitle>
+            <FileText className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPos}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters Section */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-col gap-4 md:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cari box, lokasi, no gungyu..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={picFilter} onValueChange={setPicFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Semua PIC" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua PIC</SelectItem>
+                {uniquePics.map((pic) => (
+                  <SelectItem key={pic} value={pic}>
+                    {pic}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={tahunFilter} onValueChange={setTahunFilter}>
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder="Semua Tahun" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Tahun</SelectItem>
+                {uniqueTahuns.map((tahun) => (
+                  <SelectItem key={tahun} value={tahun}>
+                    {tahun}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="Min PO"
+                className="w-full md:w-[90px]"
+                value={minPoCount}
+                onChange={(e) => setMinPoCount(e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">-</span>
+              <Input
+                type="number"
+                placeholder="Max PO"
+                className="w-full md:w-[90px]"
+                value={maxPoCount}
+                onChange={(e) => setMaxPoCount(e.target.value)}
+              />
+            </div>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="icon" onClick={resetFilters} title="Reset Filter">
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="all">Semua ({boxes.length})</TabsTrigger>
-          <TabsTrigger value="no_location">
-            Belum Ada Lokasi ({countNoLocation})
-          </TabsTrigger>
-          <TabsTrigger value="ARCHIVED">
-            Diarsipkan ({countByStatus("ARCHIVED")})
-          </TabsTrigger>
-          <TabsTrigger value="CANCELLED">
-            Dibatalkan ({countByStatus("CANCELLED")})
-          </TabsTrigger>
+          <TabsTrigger value="no_location">Belum Ada Lokasi ({countNoLocation})</TabsTrigger>
+          <TabsTrigger value="ARCHIVED">Diarsipkan ({countByStatus("ARCHIVED")})</TabsTrigger>
+          <TabsTrigger value="CANCELLED">Dibatalkan ({countByStatus("CANCELLED")})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
           {filtered.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
-                Tidak ada box dengan status ini
+                Tidak ada box yang sesuai dengan filter.
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((box) => {
+                const poCount = poCountMap.get(box.id) || 0;
                 return (
                   <Link key={box.id} href={`/boxes/${box.id}`}>
                     <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 duration-200">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-base leading-tight">
-                            {box.no_gungyu ??
-                              `Box ${box.tahun} — ${box.owner_name.split(" ")[0]}`}
+                            {box.no_gungyu ?? `Box ${box.tahun} — ${box.owner_name.split(" ")[0]}`}
                           </CardTitle>
                           <span
                             className={cn(
@@ -102,7 +260,7 @@ export default function BoxesPage() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                           <span>
-                            Tahun {box.tahun} · <POCount boxId={box.id} /> PO
+                            Tahun {box.tahun} · {poCount} PO
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -112,9 +270,7 @@ export default function BoxesPage() {
                         {box.location_code && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5 shrink-0" />
-                            <span className="font-mono text-xs">
-                              {box.location_code}
-                            </span>
+                            <span className="font-mono text-xs">{box.location_code}</span>
                           </div>
                         )}
                       </CardContent>

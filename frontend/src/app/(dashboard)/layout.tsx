@@ -30,10 +30,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="min-h-screen bg-background">
-            <Sidebar />
-            <div className="md:pl-64">
-                <Topbar />
-                <main className="p-4 md:p-6">{children}</main>
+            <div className="print:hidden">
+                <Sidebar />
+            </div>
+            <div className="md:pl-64 print:pl-0">
+                <div className="print:hidden">
+                    <Topbar />
+                </div>
+                <main className="p-4 md:p-6 print:p-0">{children}</main>
             </div>
         </div>
     );

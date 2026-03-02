@@ -44,7 +44,8 @@ export default function HistoryPage() {
 
   // Boxes sorted by created_at descending for Arsip Masuk
   const sortedBoxes = [...boxes].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
   function getBoxLabel(boxId: string) {
@@ -91,7 +92,9 @@ export default function HistoryPage() {
             </CardHeader>
             <CardContent>
               {sortedBoxes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Belum ada arsip.</p>
+                <p className="text-sm text-muted-foreground">
+                  Belum ada arsip.
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -109,14 +112,22 @@ export default function HistoryPage() {
                     <TableBody>
                       {sortedBoxes.map((box, idx) => (
                         <TableRow key={box.id}>
-                          <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {idx + 1}
+                          </TableCell>
                           <TableCell className="font-mono font-medium">
-                            {box.no_gungyu ?? <span className="text-muted-foreground">—</span>}
+                            {box.no_gungyu ?? (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>{box.tahun}</TableCell>
                           <TableCell>{box.owner_name}</TableCell>
                           <TableCell className="font-mono text-xs">
-                            {box.location_code ?? <span className="text-muted-foreground">Belum ditempatkan</span>}
+                            {box.location_code ?? (
+                              <span className="text-muted-foreground">
+                                Belum ditempatkan
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             {poCountByBox[box.id] ?? 0}

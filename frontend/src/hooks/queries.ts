@@ -10,6 +10,7 @@ import {
   fetchBins,
   fetchPOTransferHistory,
   fetchBoxLocationHistory,
+  fetchDashboardMetrics,
 } from "@/lib/api";
 import type { Box, BoxStatus, PO, Bin } from "@/lib/types";
 
@@ -25,6 +26,7 @@ export const queryKeys = {
   bins: ["bins"] as const,
   poTransferHistory: ["poTransferHistory"] as const,
   boxLocationHistory: ["boxLocationHistory"] as const,
+  dashboardMetrics: ["dashboardMetrics"] as const,
 };
 
 // ---- Base Queries ----
@@ -75,6 +77,13 @@ export function useBoxLocationHistory() {
   return useQuery({
     queryKey: queryKeys.boxLocationHistory,
     queryFn: fetchBoxLocationHistory,
+  });
+}
+
+export function useDashboardMetrics() {
+  return useQuery({
+    queryKey: queryKeys.dashboardMetrics,
+    queryFn: fetchDashboardMetrics,
   });
 }
 

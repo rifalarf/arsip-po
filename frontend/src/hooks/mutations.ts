@@ -120,7 +120,12 @@ export function useDeletePO() {
 export function useBorrowPO() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { poId: string; borrowerName: string; department: string; notes: string }) =>
+    mutationFn: (vars: {
+      poId: string;
+      borrowerName: string;
+      department: string;
+      notes: string;
+    }) =>
       apiBorrowPO(vars.poId, vars.borrowerName, vars.department, vars.notes),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.pos });

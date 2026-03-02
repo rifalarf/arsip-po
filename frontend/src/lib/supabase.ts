@@ -5,6 +5,12 @@ const supabaseUrl =
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder-anon-key";
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.warn(
+    "⚠️ NEXT_PUBLIC_SUPABASE_URL is not set — using placeholder. Auth and data fetching will fail.",
+  );
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true, // store session in localStorage → survives reload/close
