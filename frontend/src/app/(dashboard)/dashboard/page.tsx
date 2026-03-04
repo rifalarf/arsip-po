@@ -266,7 +266,7 @@ export default function DashboardPage() {
                       />
                       <div>
                         <p className="text-sm font-medium">
-                          {box.no_gungyu ?? `Box ${box.tahun}`}
+                          {box.no_gungyu ?? `Box`}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {box.location_code ?? "Belum ditempatkan"}

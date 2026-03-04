@@ -62,9 +62,9 @@ export default function PrintPreviewPage() {
                             <table className="w-full text-[10px] border-collapse border border-black text-center font-mono">
                                 <thead>
                                     <tr>
-                                        <th className="border border-black w-8">Thn</th>
+                                        <th className="border border-black w-8">Tahun</th>
                                         <th className="border border-black">No. PO</th>
-                                        <th className="border border-black w-8">Thn</th>
+                                        <th className="border border-black w-8">Tahun</th>
                                         <th className="border border-black">No. PO</th>
                                     </tr>
                                 </thead>
@@ -120,10 +120,10 @@ export default function PrintPreviewPage() {
                                 <thead>
                                     <tr>
                                         <th className="border border-black w-4">No</th>
-                                        <th className="border border-black w-8">Thn</th>
+                                        <th className="border border-black w-8">Tahun</th>
                                         <th className="border border-black">No. PO</th>
                                         <th className="border border-black w-4">No</th>
-                                        <th className="border border-black w-8">Thn</th>
+                                        <th className="border border-black w-8">Tahun</th>
                                         <th className="border border-black">No. PO</th>
                                     </tr>
                                 </thead>
@@ -183,7 +183,7 @@ export default function PrintPreviewPage() {
                                 <thead>
                                     <tr>
                                         <th className="border border-black w-5">No</th>
-                                        <th className="border border-black w-8">Thn</th>
+                                        <th className="border border-black w-8">Tahun</th>
                                         <th className="border border-black">No. PO</th>
                                     </tr>
                                 </thead>

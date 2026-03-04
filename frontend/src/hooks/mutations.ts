@@ -17,6 +17,8 @@ import {
   apiDeleteRow,
   apiDeleteLevel,
   apiDeleteBin,
+  apiUploadPOFile,
+  apiDeletePOFile,
 } from "@/lib/api";
 
 // ---- Box mutations ----
@@ -230,3 +232,28 @@ export function useDeleteBin() {
     },
   });
 }
+
+// ---- File Upload mutations ----
+
+export function useUploadPOFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { poId: string; file: File; onProgress?: (progress: number) => void }) =>
+      apiUploadPOFile(vars.poId, vars.file, vars.onProgress),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.pos });
+    },
+  });
+}
+
+export function useDeletePOFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { poId: string; fileUrl: string }) =>
+      apiDeletePOFile(vars.poId, vars.fileUrl),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.pos });
+    },
+  });
+}
+

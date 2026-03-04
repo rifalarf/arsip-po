@@ -189,11 +189,10 @@ export default function BoxDetailPage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-xl">
-                  {box.no_gungyu ?? `Box Tahun ${box.tahun}`}
+                  {box.no_gungyu ?? `Box — ${box.owner_name.split(" ")[0]}`}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dibuat oleh <strong>{box.owner_name}</strong> · Tahun{" "}
-                  {box.tahun}
+                  Dibuat oleh <strong>{box.owner_name}</strong>
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -392,9 +391,9 @@ export default function BoxDetailPage({
       {/* Print label */}
       {box.status === "ARCHIVED" && (
         <PrintLabel
-          boxId={box.no_gungyu ?? `Box Tahun ${box.tahun}`}
+          boxId={box.no_gungyu ?? "Box"}
           location={box.location_code}
-          pos={pos.map((p) => ({ no_po: p.no_po, tahun: box.tahun }))}
+          pos={pos.map((p) => ({ no_po: p.no_po, tahun: p.tahun }))}
         />
       )}
 
@@ -472,7 +471,7 @@ export default function BoxDetailPage({
                   {otherBoxes.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.no_gungyu ??
-                        `Box ${b.tahun} — ${b.owner_name.split(" ")[0]}`}
+                        `Box — ${b.owner_name.split(" ")[0]}`}
                       <span className="ml-2 text-muted-foreground text-xs">
                         ({b.status})
                       </span>

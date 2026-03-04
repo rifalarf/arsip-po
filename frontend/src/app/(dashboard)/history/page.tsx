@@ -50,7 +50,7 @@ export default function HistoryPage() {
 
   function getBoxLabel(boxId: string) {
     const box = boxes.find((b) => b.id === boxId);
-    return box?.no_gungyu ?? `Box ${box?.tahun ?? boxId}`;
+    return box?.no_gungyu ?? `Box ${boxId.slice(0, 6)}`;
   }
 
   function getBinLabel(binId: string | null) {
@@ -102,7 +102,6 @@ export default function HistoryPage() {
                       <TableRow>
                         <TableHead className="w-10">#</TableHead>
                         <TableHead>No. Gungyu</TableHead>
-                        <TableHead>Tahun</TableHead>
                         <TableHead>Dibuat Oleh</TableHead>
                         <TableHead>Lokasi</TableHead>
                         <TableHead className="text-right">Jumlah PO</TableHead>
@@ -120,7 +119,6 @@ export default function HistoryPage() {
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
-                          <TableCell>{box.tahun}</TableCell>
                           <TableCell>{box.owner_name}</TableCell>
                           <TableCell className="font-mono text-xs">
                             {box.location_code ?? (

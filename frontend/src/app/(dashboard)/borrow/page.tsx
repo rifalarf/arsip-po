@@ -43,6 +43,7 @@ export default function BorrowPage() {
   const [borrowerDepartment, setBorrowerDepartment] = useState("");
   const [borrowNotes, setBorrowNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const borrowedPOs = pos.filter((p) => p.borrow_status === "BORROWED");
   const activeLogs = borrowLogs.filter((l) => !l.returned_at);
@@ -66,24 +67,31 @@ export default function BorrowPage() {
     if (
       selectedPOIds.length === 0 ||
       !borrowerName.trim() ||
-      !borrowerDepartment.trim()
+      !borrowerDepartment.trim() ||
+      isSubmitting
     )
       return;
-    for (const id of selectedPOIds) {
-      await borrowPO.mutateAsync({
-        poId: id,
-        borrowerName: borrowerName.trim(),
-        department: borrowerDepartment.trim(),
-        notes: borrowNotes.trim(),
-      });
+
+    setIsSubmitting(true);
+    try {
+      for (const id of selectedPOIds) {
+        await borrowPO.mutateAsync({
+          poId: id,
+          borrowerName: borrowerName.trim(),
+          department: borrowerDepartment.trim(),
+          notes: borrowNotes.trim(),
+        });
+      }
+      toast.success(`${selectedPOIds.length} PO berhasil dipinjam`);
+      setBorrowDialogOpen(false);
+      setSelectedPOIds([]);
+      setBorrowerName("");
+      setBorrowerDepartment("");
+      setBorrowNotes("");
+      setSearchQuery("");
+    } finally {
+      setIsSubmitting(false);
     }
-    toast.success(`${selectedPOIds.length} PO berhasil dipinjam`);
-    setBorrowDialogOpen(false);
-    setSelectedPOIds([]);
-    setBorrowerName("");
-    setBorrowerDepartment("");
-    setBorrowNotes("");
-    setSearchQuery("");
   };
 
   const handleReturn = async () => {
@@ -150,8 +158,8 @@ export default function BorrowPage() {
                         <TableCell>
                           {log?.borrowed_at
                             ? new Date(log.borrowed_at).toLocaleDateString(
-                                "id-ID",
-                              )
+                              "id-ID",
+                            )
                             : "—"}
                         </TableCell>
                         <TableCell>{log?.notes || "—"}</TableCell>
@@ -219,8 +227,8 @@ export default function BorrowPage() {
                         <TableCell>
                           {log.returned_at
                             ? new Date(log.returned_at).toLocaleDateString(
-                                "id-ID",
-                              )
+                              "id-ID",
+                            )
                             : "—"}
                         </TableCell>
                         <TableCell>
@@ -364,7 +372,8 @@ export default function BorrowPage() {
               disabled={
                 selectedPOIds.length === 0 ||
                 !borrowerName.trim() ||
-                !borrowerDepartment.trim()
+                !borrowerDepartment.trim() ||
+                isSubmitting
               }
             >
               Pinjam{" "}

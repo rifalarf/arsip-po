@@ -34,7 +34,6 @@ export default function BoxesPage() {
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [picFilter, setPicFilter] = useState("all");
-  const [tahunFilter, setTahunFilter] = useState("all");
   const [minPoCount, setMinPoCount] = useState("");
   const [maxPoCount, setMaxPoCount] = useState("");
 
@@ -51,11 +50,6 @@ export default function BoxesPage() {
     return pics.sort((a, b) => a.localeCompare(b));
   }, [boxes]);
 
-  const uniqueTahuns = useMemo(() => {
-    const tahuns = Array.from(new Set(boxes.map((b) => b.tahun.toString()))).filter(Boolean);
-    return tahuns.sort((a, b) => b.localeCompare(a));
-  }, [boxes]);
-
   const filtered = useMemo(() => {
     return boxes.filter((box) => {
       // 1. Tab filter
@@ -66,37 +60,32 @@ export default function BoxesPage() {
       const query = searchQuery.toLowerCase();
       if (query) {
         const matchOwner = box.owner_name.toLowerCase().includes(query);
-        const matchTahun = box.tahun.toString().includes(query);
         const matchNoGungyu = box.no_gungyu?.toLowerCase().includes(query) ?? false;
         const matchLocation = box.location_code?.toLowerCase().includes(query) ?? false;
-        if (!matchOwner && !matchTahun && !matchNoGungyu && !matchLocation) return false;
+        if (!matchOwner && !matchNoGungyu && !matchLocation) return false;
       }
 
       // 3. PIC Filter
       if (picFilter !== "all" && box.owner_name !== picFilter) return false;
 
-      // 4. Tahun Filter
-      if (tahunFilter !== "all" && box.tahun.toString() !== tahunFilter) return false;
-
-      // 5. PO Count Filter
+      // 4. PO Count Filter
       const boxPoCount = poCountMap.get(box.id) || 0;
       if (minPoCount !== "" && boxPoCount < parseInt(minPoCount, 10)) return false;
       if (maxPoCount !== "" && boxPoCount > parseInt(maxPoCount, 10)) return false;
 
       return true;
     });
-  }, [boxes, tab, searchQuery, picFilter, tahunFilter, minPoCount, maxPoCount, poCountMap]);
+  }, [boxes, tab, searchQuery, picFilter, minPoCount, maxPoCount, poCountMap]);
 
   const resetFilters = () => {
     setSearchQuery("");
     setPicFilter("all");
-    setTahunFilter("all");
     setMinPoCount("");
     setMaxPoCount("");
   };
 
   const hasActiveFilters =
-    searchQuery !== "" || picFilter !== "all" || tahunFilter !== "all" || minPoCount !== "" || maxPoCount !== "";
+    searchQuery !== "" || picFilter !== "all" || minPoCount !== "" || maxPoCount !== "";
 
   const countByStatus = (s: BoxStatus) => boxes.filter((b) => b.status === s).length;
   const countNoLocation = boxes.filter((b) => b.status === "ARCHIVED" && !b.bin_id).length;
@@ -180,19 +169,6 @@ export default function BoxesPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={tahunFilter} onValueChange={setTahunFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
-                <SelectValue placeholder="Semua Tahun" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Tahun</SelectItem>
-                {uniqueTahuns.map((tahun) => (
-                  <SelectItem key={tahun} value={tahun}>
-                    {tahun}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
@@ -244,7 +220,7 @@ export default function BoxesPage() {
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-base leading-tight">
-                            {box.no_gungyu ?? `Box ${box.tahun} — ${box.owner_name.split(" ")[0]}`}
+                            {box.no_gungyu ?? `Box — ${box.owner_name.split(" ")[0]}`}
                           </CardTitle>
                           <span
                             className={cn(
@@ -260,7 +236,7 @@ export default function BoxesPage() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                           <span>
-                            Tahun {box.tahun} · {poCount} PO
+                            {poCount} PO
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">

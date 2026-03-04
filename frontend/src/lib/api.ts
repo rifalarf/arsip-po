@@ -168,7 +168,6 @@ export async function apiCreateBox(
   }
   const noGungyu = gungyuResult as string;
 
-  const boxTahun = entries[0].tahun;
   const now = new Date().toISOString();
 
   // Insert box (directly ARCHIVED, no location yet)
@@ -177,7 +176,6 @@ export async function apiCreateBox(
     .insert({
       owner_id: user.id,
       owner_name: user.name,
-      tahun: boxTahun,
       status: "ARCHIVED",
       no_gungyu: noGungyu,
       bin_id: null,
@@ -271,9 +269,8 @@ export async function apiCreateBox(
           data: {
             boxId: newBox.id,
             no_gungyu: noGungyu,
-            tahun: boxTahun,
             location_code: target.bin_code,
-            pos: entries.map((e) => e.no_po),
+            pos: entries.map((e) => ({ no_po: e.no_po, tahun: e.tahun })),
           },
         };
       }
@@ -288,9 +285,8 @@ export async function apiCreateBox(
     data: {
       boxId: newBox.id,
       no_gungyu: noGungyu,
-      tahun: boxTahun,
       location_code: null,
-      pos: entries.map((e) => e.no_po),
+      pos: entries.map((e) => ({ no_po: e.no_po, tahun: e.tahun })),
     },
   };
 }
@@ -585,19 +581,23 @@ export async function apiBorrowPO(
     .single();
   if (!po) return { success: false, message: "PO tidak ditemukan." };
 
-  const { error: updateError } = await supabase
+  // Gunakan filter .eq("borrow_status", "AVAILABLE") untuk memastikan atomicity
+  const { data: updatedPo, error: updateError } = await supabase
     .from("pos")
     .update({ borrow_status: "BORROWED" })
-    .eq("id", poId);
+    .eq("id", poId)
+    .eq("borrow_status", "AVAILABLE")
+    .select()
+    .single();
 
-  if (updateError) {
+  if (updateError || !updatedPo) {
     return {
       success: false,
-      message: `Gagal pinjam PO: ${updateError.message}`,
+      message: `Gagal pinjam PO: PO mungkin sudah dipinjam.`,
     };
   }
 
-  await supabase.from("borrow_logs").insert({
+  const { error: insertError } = await supabase.from("borrow_logs").insert({
     po_id: poId,
     no_po: po.no_po,
     borrower_name: borrowerName,
@@ -605,6 +605,19 @@ export async function apiBorrowPO(
     borrowed_at: new Date().toISOString(),
     notes: notes || "",
   });
+
+  if (insertError) {
+    // Rollback if insert fails
+    await supabase
+      .from("pos")
+      .update({ borrow_status: "AVAILABLE" })
+      .eq("id", poId);
+
+    return {
+      success: false,
+      message: `Gagal buat log peminjaman: ${insertError.message}`,
+    };
+  }
 
   return { success: true, message: `PO ${po.no_po} berhasil dipinjam.` };
 }
@@ -851,3 +864,88 @@ export async function apiDeleteBin(binId: string): Promise<ActionResult> {
     return { success: false, message: `Gagal hapus bin: ${error.message}` };
   return { success: true, message: "Bin berhasil dihapus." };
 }
+
+// ============================================================
+// FILE UPLOAD (Cloudflare R2)
+// ============================================================
+
+// ---- Upload PO File ----
+export async function apiUploadPOFile(
+  poId: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<ActionResult<{ file_url: string }>> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload");
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const result = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+          resolve({
+            success: true,
+            message: result.message,
+            data: { file_url: result.file_url },
+          });
+        } else {
+          resolve({
+            success: false,
+            message: result.message || "Gagal upload file.",
+          });
+        }
+      } catch (e) {
+        // Handle server errors that return HTML instead of JSON
+        console.error("Upload response error:", xhr.responseText);
+        resolve({
+          success: false,
+          message: `Gagal upload file (Error ${xhr.status}). Cek kredensial R2 di .env.local`,
+        });
+      }
+    };
+
+    xhr.onerror = () => {
+      resolve({
+        success: false,
+        message: "Network error saat upload. Cek koneksi internet.",
+      });
+    };
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("poId", poId);
+
+    xhr.send(formData);
+  });
+}
+
+// ---- Delete PO File ----
+export async function apiDeletePOFile(
+  poId: string,
+  fileUrl: string,
+): Promise<ActionResult> {
+  const res = await fetch("/api/files", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ poId, fileUrl }),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok || !result.success) {
+    return {
+      success: false,
+      message: result.message || "Gagal hapus file.",
+    };
+  }
+
+  return { success: true, message: result.message };
+}
+

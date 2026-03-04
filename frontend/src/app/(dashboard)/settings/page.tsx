@@ -92,12 +92,6 @@ function BinCell({
               </div>
               <div className="flex gap-1.5">
                 <span className="text-muted-foreground w-10 shrink-0">
-                  Tahun:
-                </span>
-                <span className="font-medium">{box.tahun}</span>
-              </div>
-              <div className="flex gap-1.5">
-                <span className="text-muted-foreground w-10 shrink-0">
                   PIC:
                 </span>
                 <span className="font-medium truncate max-w-[100px]">
@@ -115,8 +109,9 @@ function BinCell({
           )}
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-border" />
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
 
@@ -777,16 +772,16 @@ export default function SettingsPage() {
                                               occupiedBinIds.has(bin.id);
                                             const box = isOccupied
                                               ? (boxes.find(
-                                                  (bx) => bx.bin_id === bin.id,
-                                                ) ?? null)
+                                                (bx) => bx.bin_id === bin.id,
+                                              ) ?? null)
                                               : null;
                                             const borrowedCount = box
                                               ? pos.filter(
-                                                  (p) =>
-                                                    p.box_id === box.id &&
-                                                    p.borrow_status ===
-                                                      "BORROWED",
-                                                ).length
+                                                (p) =>
+                                                  p.box_id === box.id &&
+                                                  p.borrow_status ===
+                                                  "BORROWED",
+                                              ).length
                                               : 0;
                                             return (
                                               <BinCell

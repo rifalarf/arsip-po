@@ -16,7 +16,7 @@ import {
   type Column,
 } from "@tanstack/react-table";
 import { usePOs, useBoxes, useUsers } from "@/hooks/queries";
-import { useMovePOToBox, useEditPO, useDeletePO } from "@/hooks/mutations";
+import { useMovePOToBox, useEditPO, useDeletePO, useUploadPOFile, useDeletePOFile } from "@/hooks/mutations";
 import { useApp } from "@/lib/context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -59,6 +60,10 @@ import {
   ArrowRightLeft,
   Pencil,
   Trash2,
+  Eye,
+  FileUp,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,6 +80,7 @@ type PORow = {
   pic: string;
   keterangan: string;
   status: string;
+  file_url: string | null;
 };
 
 const columnHelper = createColumnHelper<PORow>();
@@ -422,6 +428,8 @@ export default function POListPage() {
   const movePOToBox = useMovePOToBox();
   const editPO = useEditPO();
   const deletePO = useDeletePO();
+  const uploadPOFile = useUploadPOFile();
+  const deletePOFile = useDeletePOFile();
 
   // Move PO dialog state
   const [movePOOpen, setMovePOOpen] = useState(false);
@@ -441,13 +449,24 @@ export default function POListPage() {
     pic: string;
     keterangan: string;
     status: string;
+    file_url: string | null;
   } | null>(null);
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // Delete PO dialog state
   const [deletePOOpen, setDeletePOOpen] = useState(false);
   const [deletePOData, setDeletePOData] = useState<{
     id: string;
     no_po: string;
+  } | null>(null);
+
+  // View document dialog state
+  const [viewDocOpen, setViewDocOpen] = useState(false);
+  const [viewDocData, setViewDocData] = useState<{
+    id: string;
+    no_po: string;
+    file_url: string;
   } | null>(null);
 
   const [globalFilter, setGlobalFilter] = useState("");
@@ -469,6 +488,7 @@ export default function POListPage() {
         pic: po.buyer_name,
         keterangan: po.keterangan,
         status: po.borrow_status === "BORROWED" ? "Dipinjam" : "Tersedia",
+        file_url: po.file_url ?? null,
       };
     });
   }, [pos, boxes]);
@@ -481,6 +501,29 @@ export default function POListPage() {
         header: "Aksi",
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
+            <button
+              title={row.original.file_url ? "Lihat Dokumen" : "Belum ada dokumen"}
+              aria-label="Lihat Dokumen"
+              className={cn(
+                "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                row.original.file_url
+                  ? "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  : "text-muted-foreground/40 cursor-default",
+              )}
+              onClick={() => {
+                if (row.original.file_url) {
+                  setViewDocData({
+                    id: row.original.id,
+                    no_po: row.original.no_po,
+                    file_url: row.original.file_url,
+                  });
+                  setViewDocOpen(true);
+                }
+              }}
+              disabled={!row.original.file_url}
+            >
+              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
             <button
               title="Pindah PO"
               aria-label="Pindah PO"
@@ -509,7 +552,9 @@ export default function POListPage() {
                   pic: row.original.pic,
                   keterangan: row.original.keterangan,
                   status: row.original.status,
+                  file_url: row.original.file_url,
                 });
+                setEditFile(null);
                 setEditPOOpen(true);
               }}
             >
@@ -557,23 +602,70 @@ export default function POListPage() {
   // Edit PO handler
   const handleEditPO = async () => {
     if (!editPOData) return;
-    const result = await editPO.mutateAsync({
-      poId: editPOData.id,
-      fields: {
-        no_po: editPOData.no_po,
-        tahun: editPOData.tahun,
-        nama_barang: editPOData.nama_barang,
-        dok_date: editPOData.dok_date,
-        buyer_name: editPOData.pic,
-        keterangan: editPOData.keterangan,
-        borrow_status:
-          editPOData.status === "Dipinjam" ? "BORROWED" : "AVAILABLE",
-        no_gungyu: editPOData.no_gungyu,
-      },
+    try {
+      const result = await editPO.mutateAsync({
+        poId: editPOData.id,
+        fields: {
+          no_po: editPOData.no_po,
+          tahun: editPOData.tahun,
+          nama_barang: editPOData.nama_barang,
+          dok_date: editPOData.dok_date,
+          buyer_name: editPOData.pic,
+          keterangan: editPOData.keterangan,
+          borrow_status:
+            editPOData.status === "Dipinjam" ? "BORROWED" : "AVAILABLE",
+          no_gungyu: editPOData.no_gungyu,
+        },
+      });
+      if (result.success) {
+        // Upload file if selected
+        if (editFile) {
+          try {
+            setUploadProgress(0);
+            const uploadResult = await uploadPOFile.mutateAsync({
+              poId: editPOData.id,
+              file: editFile,
+              onProgress: (progress) => {
+                setUploadProgress(progress);
+              },
+            });
+            if (uploadResult.success) {
+              toast.success("Berhasil", { description: "PO dan file berhasil diupdate." });
+            } else {
+              toast.success("PO diupdate", { description: result.message });
+              toast.error("Upload gagal", { description: uploadResult.message });
+            }
+          } catch (err) {
+            toast.error("Upload gagal", {
+              description: err instanceof Error ? err.message : "Terjadi kesalahan server saat upload."
+            });
+          } finally {
+            setUploadProgress(0);
+          }
+        } else {
+          toast.success("Berhasil", { description: result.message });
+        }
+        setEditFile(null);
+        setEditPOOpen(false);
+      } else {
+        toast.error("Gagal", { description: result.message });
+      }
+    } catch (err) {
+      toast.error("Gagal", { description: "Terjadi kesalahan server." });
+    }
+  };
+
+  // Delete file handler
+  const handleDeleteFile = async () => {
+    if (!viewDocData) return;
+    const result = await deletePOFile.mutateAsync({
+      poId: viewDocData.id,
+      fileUrl: viewDocData.file_url,
     });
     if (result.success) {
-      toast.success("Berhasil", { description: result.message });
-      setEditPOOpen(false);
+      toast.success("Berhasil", { description: "File berhasil dihapus." });
+      setViewDocOpen(false);
+      setViewDocData(null);
     } else {
       toast.error("Gagal", { description: result.message });
     }
@@ -683,21 +775,21 @@ export default function POListPage() {
                         <th
                           key={header.id}
                           className={cn(
-                            "px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap transition-colors",
+                            "px-3 py-2 text-center font-semibold text-foreground whitespace-nowrap transition-colors",
                             isColFiltered && "bg-primary/5",
                           )}
                         >
                           {header.column.id === "actions" ? (
-                            <span className="select-none text-xs">
+                            <div className="flex justify-center select-none text-xs">
                               {flexRender(
                                 header.column.columnDef.header,
                                 header.getContext(),
                               )}
-                            </span>
+                            </div>
                           ) : isFilterable ? (
-                            // Filterable column: label left, filter icon right
+                            // Filterable column: label left, filter icon right -> centered
                             <div className="space-y-0.5">
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center justify-center gap-2">
                                 <span className="select-none">
                                   {flexRender(
                                     header.column.columnDef.header,
@@ -744,7 +836,7 @@ export default function POListPage() {
                           ) : (
                             // Non-filterable column: click to sort
                             <div
-                              className="flex cursor-pointer select-none items-center gap-1 hover:text-primary transition-colors"
+                              className="flex cursor-pointer select-none items-center justify-center gap-1 hover:text-primary transition-colors"
                               onClick={header.column.getToggleSortingHandler()}
                             >
                               {flexRender(
@@ -858,7 +950,7 @@ export default function POListPage() {
                 <SelectContent>
                   {moveTargetBoxes.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
-                      {b.no_gungyu || "Draft"} — Tahun {b.tahun}{" "}
+                      {b.no_gungyu || "Draft"} {" "}
                       {b.location_code ? `(${b.location_code})` : ""}
                     </SelectItem>
                   ))}
@@ -1008,14 +1100,111 @@ export default function POListPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* File Upload - full width */}
+              <div className="col-span-2 space-y-1.5">
+                <Label>Dokumen Scan (opsional)</Label>
+                {editPOData.file_url && !editFile ? (
+                  <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+                    <Eye className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span className="text-xs text-blue-700 truncate flex-1">
+                      File tersedia
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
+                      onClick={() => window.open(editPOData.file_url!, "_blank")}
+                    >
+                      Lihat
+                    </Button>
+                    <label className="cursor-pointer text-xs text-amber-600 hover:text-amber-800 font-medium">
+                      Ganti
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setEditFile(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <label className={cn(
+                      "flex cursor-pointer items-center gap-3 rounded-md border border-dashed px-3 py-3 transition-colors",
+                      uploadPOFile.isPending
+                        ? "border-primary/50 bg-blue-50/50 pointer-events-none"
+                        : "border-muted-foreground/30 hover:border-primary hover:bg-muted/30"
+                    )}>
+                      <FileUp className={cn(
+                        "h-5 w-5",
+                        uploadPOFile.isPending ? "text-primary animate-pulse" : "text-muted-foreground"
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {editFile ? editFile.name : "Pilih file untuk diupload"}
+                        </p>
+                        {uploadPOFile.isPending ? (
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary transition-all duration-300"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-medium text-primary w-8 text-right">
+                              {uploadProgress}%
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            {editFile
+                              ? `${(editFile.size / 1024 / 1024).toFixed(2)} MB`
+                              : "PDF atau DOCX — max 10MB"}
+                          </p>
+                        )}
+                      </div>
+                      {editFile && !uploadPOFile.isPending && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setEditFile(null);
+                          }}
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setEditFile(file);
+                        }}
+                        disabled={uploadPOFile.isPending}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPOOpen(false)}>
               Batal
             </Button>
-            <Button onClick={handleEditPO} disabled={editPO.isPending}>
-              {editPO.isPending ? "Menyimpan..." : "Simpan"}
+            <Button onClick={handleEditPO} disabled={editPO.isPending || uploadPOFile.isPending}>
+              {editPO.isPending || uploadPOFile.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</>
+              ) : (
+                "Simpan"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1046,6 +1235,63 @@ export default function POListPage() {
               disabled={deletePO.isPending}
             >
               {deletePO.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Document Dialog */}
+      <Dialog open={viewDocOpen} onOpenChange={setViewDocOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-600" />
+              Dokumen PO {viewDocData?.no_po}
+            </DialogTitle>
+            <DialogDescription>
+              Preview dokumen scan yang telah diupload.
+            </DialogDescription>
+          </DialogHeader>
+          {viewDocData && (
+            <div className="space-y-3">
+              {/* Preview area */}
+              <div className="rounded-lg border bg-muted/20 overflow-hidden">
+                {viewDocData.file_url.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                  <img
+                    src={viewDocData.file_url}
+                    alt={`Dokumen PO ${viewDocData.no_po}`}
+                    className="w-full max-h-[60vh] object-contain"
+                  />
+                ) : (
+                  <iframe
+                    src={viewDocData.file_url}
+                    title={`Dokumen PO ${viewDocData.no_po}`}
+                    className="w-full h-[60vh]"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => viewDocData && window.open(viewDocData.file_url, "_blank")}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteFile}
+              disabled={deletePOFile.isPending}
+            >
+              {deletePOFile.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menghapus...</>
+              ) : (
+                <><Trash2 className="mr-2 h-4 w-4" />Hapus File</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

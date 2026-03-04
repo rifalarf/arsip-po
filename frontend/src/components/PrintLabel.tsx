@@ -15,7 +15,7 @@ export function PrintLabel({ boxId, location, pos }: PrintLabelProps) {
     }));
 
     return (
-        <div className="hidden print:flex print:w-full print:justify-center print:p-8">
+        <div className="hidden print:flex print:w-full print:justify-start print:p-0">
             {/* The Print Layout Wrapper */}
             <div className="border border-black p-4 w-[200px]">
                 <div className="text-center mb-2">
@@ -28,7 +28,7 @@ export function PrintLabel({ boxId, location, pos }: PrintLabelProps) {
                     <thead>
                         <tr>
                             <th className="border border-black w-5">No</th>
-                            <th className="border border-black w-8">Thn</th>
+                            <th className="border border-black w-8">Tahun</th>
                             <th className="border border-black">No. PO</th>
                         </tr>
                     </thead>

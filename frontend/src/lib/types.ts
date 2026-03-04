@@ -45,7 +45,6 @@ export interface Box {
   id: string;
   owner_id: string;
   owner_name: string;
-  tahun: number;
   status: BoxStatus;
   no_gungyu: string | null;
   bin_id: string | null;
@@ -67,6 +66,7 @@ export interface PO {
   buyer_name: string;
   borrow_status: BorrowStatus;
   created_at: string;
+  file_url: string | null;
 }
 
 // ---- Borrow Log ----
@@ -160,7 +160,6 @@ export interface DashboardMetrics {
     id: string;
     status: BoxStatus;
     no_gungyu: string | null;
-    tahun: number;
     location_code: string | null;
   }[];
 }

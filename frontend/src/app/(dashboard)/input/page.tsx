@@ -98,9 +98,8 @@ export default function BuatBoxPage() {
   const [createdBoxData, setCreatedBoxData] = useState<{
     boxId: string;
     no_gungyu: string;
-    tahun: number;
     location_code: string | null;
-    pos: string[];
+    pos: { no_po: string; tahun: number }[];
   } | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -521,10 +520,7 @@ export default function BuatBoxPage() {
         <PrintLabel
           boxId={createdBoxData.no_gungyu}
           location={createdBoxData.location_code}
-          pos={createdBoxData.pos.map((po) => ({
-            no_po: po,
-            tahun: createdBoxData.tahun,
-          }))}
+          pos={createdBoxData.pos}
         />
       )}
     </>

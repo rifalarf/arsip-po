@@ -40,6 +40,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Restore session on mount — rely solely on onAuthStateChange (fires INITIAL_SESSION on subscribe)
   useEffect(() => {
     let initialised = false;
+    let currentRequestId = 0; // Guard against stale async responses
 
     // Safety timeout: if Supabase never responds (unreachable, DNS failure, etc.),
     // force loading to stop so the user isn't stuck on a spinner forever.
@@ -55,17 +56,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip TOKEN_REFRESHED events — they don't change the user identity.
+      // Processing them causes a race condition where user is momentarily set
+      // to null while fetchProfile re-runs.
+      if (event === "TOKEN_REFRESHED") {
+        // Still mark as initialised if this was somehow the first event
+        if (!initialised) {
+          initialised = true;
+          setLoading(false);
+        }
+        return;
+      }
+
+      const requestId = ++currentRequestId;
       try {
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
-          setUser(profile);
+          // Only apply if this is still the latest request
+          if (requestId === currentRequestId) {
+            setUser(profile);
+          }
         } else {
-          setUser(null);
+          if (requestId === currentRequestId) {
+            setUser(null);
+          }
         }
       } catch (err) {
         console.error("[AppProvider] Failed to fetch user profile:", err);
-        setUser(null);
+        if (requestId === currentRequestId) {
+          setUser(null);
+        }
       }
       // Only flip loading off once (on the first event — INITIAL_SESSION)
       if (!initialised) {
@@ -94,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     // 2. Authenticate with Supabase Auth
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: userRow.email,
       password,
     });
@@ -103,7 +124,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error("Username atau password salah");
     }
 
-    // Profile will be set via onAuthStateChange listener
+    // 3. Immediately fetch and set profile to avoid race condition
+    //    onAuthStateChange will also fire, but we set the user here first
+    //    so the dashboard layout doesn't see user=null and redirect to login.
+    if (authData.user) {
+      const profile = await fetchProfile(authData.user.id);
+      setUser(profile);
+    }
   }, []);
 
   const logout = useCallback(async () => {
