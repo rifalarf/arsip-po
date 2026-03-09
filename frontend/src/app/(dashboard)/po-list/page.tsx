@@ -716,7 +716,7 @@ export default function POListPage() {
     <div className="space-y-4">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Arsip PO</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Daftar Arsip</h1>
         <p className="text-muted-foreground">
           {filteredCount === data.length
             ? `${data.length} PO tercatat`

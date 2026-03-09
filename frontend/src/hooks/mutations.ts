@@ -19,6 +19,7 @@ import {
   apiDeleteBin,
   apiUploadPOFile,
   apiDeletePOFile,
+  apiDeleteBox,
 } from "@/lib/api";
 
 // ---- Box mutations ----
@@ -141,6 +142,18 @@ export function useReturnPO() {
   return useMutation({
     mutationFn: (vars: { poId: string }) => apiReturnPO(vars.poId),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.pos });
+      qc.invalidateQueries({ queryKey: queryKeys.borrowLogs });
+    },
+  });
+}
+
+export function useDeleteBox() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { boxId: string }) => apiDeleteBox(vars.boxId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.boxes });
       qc.invalidateQueries({ queryKey: queryKeys.pos });
       qc.invalidateQueries({ queryKey: queryKeys.borrowLogs });
     },

@@ -493,6 +493,19 @@ export async function apiMovePOToBox(
     reason: reason || "Dipindahkan oleh admin",
   });
 
+  // CLEANUP: Check if previous box is empty
+  const { count } = await supabase
+    .from("pos")
+    .select("*", { count: "exact", head: true })
+    .eq("box_id", prevBoxId);
+
+  if (count === 0) {
+    // FIX: Hapus semua referensi box di transfer history & location history sebelum menghapus box untuk mencegah FK error
+    await supabase.from("po_transfer_history").delete().or(`from_box_id.eq.${prevBoxId},to_box_id.eq.${prevBoxId}`);
+    await supabase.from("box_location_history").delete().eq("box_id", prevBoxId);
+    await supabase.from("boxes").delete().eq("id", prevBoxId);
+  }
+
   return { success: true, message: `PO ${po.no_po} berhasil dipindahkan.` };
 }
 
@@ -553,6 +566,8 @@ export async function apiDeletePO(poId: string): Promise<ActionResult> {
     .single();
   if (!po) return { success: false, message: "PO tidak ditemukan." };
 
+  const boxId = po.box_id;
+
   // Clean up transfer history
   await supabase.from("po_transfer_history").delete().eq("po_id", poId);
 
@@ -562,6 +577,19 @@ export async function apiDeletePO(poId: string): Promise<ActionResult> {
   const { error } = await supabase.from("pos").delete().eq("id", poId);
   if (error) {
     return { success: false, message: `Gagal hapus PO: ${error.message}` };
+  }
+
+  // CLEANUP: Check if the box is empty
+  const { count } = await supabase
+    .from("pos")
+    .select("*", { count: "exact", head: true })
+    .eq("box_id", boxId);
+
+  if (count === 0) {
+    // FIX: Hapus semua referensi box di transfer history & location history sebelum menghapus box untuk mencegah FK error
+    await supabase.from("po_transfer_history").delete().or(`from_box_id.eq.${boxId},to_box_id.eq.${boxId}`);
+    await supabase.from("box_location_history").delete().eq("box_id", boxId);
+    await supabase.from("boxes").delete().eq("id", boxId);
   }
 
   return { success: true, message: `PO ${po.no_po} berhasil dihapus.` };
@@ -643,6 +671,53 @@ export async function apiReturnPO(poId: string): Promise<ActionResult> {
     .is("returned_at", null);
 
   return { success: true, message: "PO berhasil dikembalikan." };
+}
+
+// ---- Delete Box (admin) ----
+export async function apiDeleteBox(boxId: string): Promise<ActionResult> {
+  const { data: box } = await supabase
+    .from("boxes")
+    .select("no_gungyu")
+    .eq("id", boxId)
+    .single();
+
+  if (!box) {
+    return { success: false, message: "Box tidak ditemukan." };
+  }
+
+  // 1. Dapatkan daftar seluruh po_id yang terikat pada box_id
+  const { data: posToDel } = await supabase
+    .from("pos")
+    .select("id")
+    .eq("box_id", boxId);
+
+  if (posToDel && posToDel.length > 0) {
+    const poIds = posToDel.map((p) => p.id);
+
+    // 2. Hapus transfer history untuk PO yang ada di box saat ini
+    await supabase.from("po_transfer_history").delete().in("po_id", poIds);
+
+    // 3. Hapus borrow logs untuk semua po_id
+    await supabase.from("borrow_logs").delete().in("po_id", poIds);
+
+    // 4. Hapus PO-nya itu sendiri
+    await supabase.from("pos").delete().in("id", poIds);
+  }
+
+  // 5. FIX: Hapus SEMUA sisa transfer history dimana box ini menjadi asal atau tujuan (mencegah FK violation constraint)
+  await supabase.from("po_transfer_history").delete().or(`from_box_id.eq.${boxId},to_box_id.eq.${boxId}`);
+
+  // 6. Hapus location history box
+  await supabase.from("box_location_history").delete().eq("box_id", boxId);
+
+  // 7. Hapus box-nya
+  const { error } = await supabase.from("boxes").delete().eq("id", boxId);
+
+  if (error) {
+    return { success: false, message: `Gagal menghapus box: ${error.message}` };
+  }
+
+  return { success: true, message: `Box ${box.no_gungyu} beserta isinya berhasil dihapus permanen.` };
 }
 
 // ============================================================

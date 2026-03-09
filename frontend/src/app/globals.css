@@ -150,3 +150,9 @@
     @apply bg-card text-card-foreground rounded-xl border shadow-sm transition-all duration-200 hover:shadow-md;
   }
 }
+
+@media print {
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+}

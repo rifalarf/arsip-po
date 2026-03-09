@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Arsip — Sistem Arsip PO",
+  title: "Arsip — Sistem Manajemen Arsip",
   description:
     "Aplikasi pengelolaan arsip Purchase Order (PO) Departemen Pengadaan",
 };

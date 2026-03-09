@@ -28,7 +28,7 @@ const NAV_ITEMS = [
     roles: ["buyer", "admin"],
   },
   {
-    label: "Arsip PO",
+    label: "Daftar Arsip",
     href: "/po-list",
     icon: List,
     roles: ["buyer", "admin"],

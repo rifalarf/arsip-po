@@ -2,14 +2,16 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useBoxes, usePOs } from "@/hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BoxStatus } from "@/lib/types";
-import { CalendarDays, MapPin, User2, Search, X, Box as BoxIcon, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { CalendarDays, MapPin, User2, Search, X, Box as BoxIcon, FileText, CheckCircle2, AlertCircle, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABELS: Record<BoxStatus | "all" | "no_location", string> = {
@@ -36,6 +38,9 @@ export default function BoxesPage() {
   const [picFilter, setPicFilter] = useState("all");
   const [minPoCount, setMinPoCount] = useState("");
   const [maxPoCount, setMaxPoCount] = useState("");
+
+  const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>([]);
+  const router = useRouter();
 
   const poCountMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -97,10 +102,31 @@ export default function BoxesPage() {
   const totalPos = pos.length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Daftar Box</h1>
-        <p className="text-muted-foreground">Semua box arsip PO ({boxes.length} total)</p>
+    <div className="space-y-6 relative">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Daftar Box</h1>
+          <p className="text-muted-foreground">Semua box arsip ({boxes.length} total)</p>
+        </div>
+        {selectedBoxIds.length > 0 && (
+          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+            <span className="text-sm font-medium">
+              {selectedBoxIds.length} Box Terpilih
+            </span>
+            <Button
+              onClick={() => {
+                router.push(`/print-massal?ids=${selectedBoxIds.join(",")}`);
+              }}
+              className="bg-primary shadow-lg"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Cetak Massal
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedBoxIds([])}>
+              Batal
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -214,24 +240,47 @@ export default function BoxesPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((box) => {
                 const poCount = poCountMap.get(box.id) || 0;
+                const isSelected = selectedBoxIds.includes(box.id);
+
                 return (
-                  <Link key={box.id} href={`/boxes/${box.id}`}>
-                    <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 duration-200">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="text-base leading-tight">
+                  <Card
+                    key={box.id}
+                    className={cn(
+                      "relative transition-all duration-200 border-2",
+                      isSelected ? "border-primary bg-primary/5" : "border-transparent shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                    )}
+                  >
+                    {/* Make the Card clickable overall, except checkbox area */}
+                    <Link href={`/boxes/${box.id}`} className="absolute inset-0 z-0" />
+                    
+                    <CardHeader className="pb-3 relative z-10">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedBoxIds((prev) => [...prev, box.id]);
+                              } else {
+                                setSelectedBoxIds((prev) => prev.filter((id) => id !== box.id));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <CardTitle className="text-base leading-tight mt-0.5">
                             {box.no_gungyu ?? `Box — ${box.owner_name.split(" ")[0]}`}
                           </CardTitle>
-                          <span
-                            className={cn(
-                              "text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0",
-                              STATUS_COLORS[box.status],
-                            )}
-                          >
-                            {STATUS_LABELS[box.status]}
-                          </span>
                         </div>
-                      </CardHeader>
+                        <span
+                          className={cn(
+                            "text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0",
+                            STATUS_COLORS[box.status],
+                          )}
+                        >
+                          {STATUS_LABELS[box.status]}
+                        </span>
+                      </div>
+                    </CardHeader>
                       <CardContent className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <CalendarDays className="h-3.5 w-3.5 shrink-0" />
@@ -250,8 +299,7 @@ export default function BoxesPage() {
                           </div>
                         )}
                       </CardContent>
-                    </Card>
-                  </Link>
+                  </Card>
                 );
               })}
             </div>

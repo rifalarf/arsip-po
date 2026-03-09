@@ -1,6 +1,6 @@
-# Skenario Pengujian (Test Cases) - Aplikasi Arsip PO
+# Skenario Pengujian (Test Cases) - Aplikasi Manajemen Arsip
 
-Dokumen ini berisi daftar skenario pengujian manual (manual test cases) untuk memastikan seluruh fitur pada aplikasi Arsip PO berjalan dengan baik. Pengujian mencakup Autentikasi, Manajemen PO, Manajemen Box, Peminjaman Dokumen, dan Integrasi File (Cloudflare R2).
+Dokumen ini berisi daftar skenario pengujian manual (manual test cases) untuk memastikan seluruh fitur pada aplikasi Manajemen Arsip berjalan dengan baik. Pengujian mencakup Autentikasi, Manajemen PO, Manajemen Box, Peminjaman Dokumen, dan Integrasi File (Cloudflare R2).
 
 ## 1. Modul Autentikasi (Auth)
 

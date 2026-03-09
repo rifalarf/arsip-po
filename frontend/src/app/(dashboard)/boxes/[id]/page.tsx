@@ -13,6 +13,7 @@ import {
   useAssignBoxToBin,
   useRelocateBox,
   useMovePOToBox,
+  useDeleteBox,
 } from "@/hooks/mutations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,8 +43,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Printer, ArrowLeft, MapPin, ArrowRightLeft } from "lucide-react";
+import { Printer, ArrowLeft, MapPin, ArrowRightLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BoxStatus } from "@/lib/types";
@@ -90,6 +92,11 @@ export default function BoxDetailPage({
   const [movePOId, setMovePOId] = useState<string>("");
   const [moveTargetBoxId, setMoveTargetBoxId] = useState<string>("");
   const [moveReason, setMoveReason] = useState("");
+
+  // Delete Box dialog
+  const [deleteBoxOpen, setDeleteBoxOpen] = useState(false);
+  const deleteBoxMutation = useDeleteBox();
+  const router = useRouter();
 
   if (!box) {
     return (
@@ -173,6 +180,17 @@ export default function BoxDetailPage({
     } else toast.error("Gagal", { description: result.message });
   };
 
+  const handleDeleteBox = async () => {
+    const result = await deleteBoxMutation.mutateAsync({ boxId: box.id });
+    if (result.success) {
+      toast.success("Berhasil", { description: result.message });
+      setDeleteBoxOpen(false);
+      router.push("/boxes");
+    } else {
+      toast.error("Gagal Hapus", { description: result.message });
+    }
+  };
+
   return (
     <>
       <div className="space-y-6 print:hidden">
@@ -214,6 +232,15 @@ export default function BoxDetailPage({
                     Cetak Label
                   </Button>
                 )}
+                {/* Delete Box Button */}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setDeleteBoxOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus Box
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -495,6 +522,40 @@ export default function BoxDetailPage({
             </Button>
             <Button onClick={handleMovePO} disabled={!moveTargetBoxId}>
               Pindahkan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Box Confirmation Dialog */}
+      <Dialog open={deleteBoxOpen} onOpenChange={setDeleteBoxOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Box Permanen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-foreground">
+              Apakah Anda yakin ingin menghapus Box{" "}
+              <strong className="font-mono">{box.no_gungyu}</strong> secara permanen?
+            </p>
+            <div className="rounded-md bg-destructive/10 p-4 border border-destructive/20 text-destructive text-sm font-medium">
+              Aksi ini bersifat destruktif! Menghapus Box akan turut menghancurkan semua data PO di dalamnya beserta riwayat log transfer dan peminjaman secara cascading.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteBoxOpen(false)}
+              disabled={deleteBoxMutation.isPending}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteBox}
+              disabled={deleteBoxMutation.isPending}
+            >
+              {deleteBoxMutation.isPending ? "Menghapus..." : "Ya, Hapus Permanen"}
             </Button>
           </DialogFooter>
         </DialogContent>
