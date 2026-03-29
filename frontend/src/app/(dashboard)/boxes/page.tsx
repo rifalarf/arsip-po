@@ -35,7 +35,7 @@ export default function BoxesPage() {
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
-  const [picFilter, setPicFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [minPoCount, setMinPoCount] = useState("");
   const [maxPoCount, setMaxPoCount] = useState("");
 
@@ -50,9 +50,9 @@ export default function BoxesPage() {
     return map;
   }, [pos]);
 
-  const uniquePics = useMemo(() => {
-    const pics = Array.from(new Set(boxes.map((b) => b.owner_name))).filter(Boolean);
-    return pics.sort((a, b) => a.localeCompare(b));
+  const uniqueOwnerNames = useMemo(() => {
+    const ownerNames = Array.from(new Set(boxes.map((box) => box.owner_name))).filter(Boolean);
+    return ownerNames.sort((a, b) => a.localeCompare(b));
   }, [boxes]);
 
   const filtered = useMemo(() => {
@@ -70,8 +70,8 @@ export default function BoxesPage() {
         if (!matchOwner && !matchNoGungyu && !matchLocation) return false;
       }
 
-      // 3. PIC Filter
-      if (picFilter !== "all" && box.owner_name !== picFilter) return false;
+      // 3. Owner Filter
+      if (ownerFilter !== "all" && box.owner_name !== ownerFilter) return false;
 
       // 4. PO Count Filter
       const boxPoCount = poCountMap.get(box.id) || 0;
@@ -80,20 +80,20 @@ export default function BoxesPage() {
 
       return true;
     });
-  }, [boxes, tab, searchQuery, picFilter, minPoCount, maxPoCount, poCountMap]);
+  }, [boxes, tab, searchQuery, ownerFilter, minPoCount, maxPoCount, poCountMap]);
 
   const resetFilters = () => {
     setSearchQuery("");
-    setPicFilter("all");
+    setOwnerFilter("all");
     setMinPoCount("");
     setMaxPoCount("");
   };
 
   const hasActiveFilters =
-    searchQuery !== "" || picFilter !== "all" || minPoCount !== "" || maxPoCount !== "";
+    searchQuery !== "" || ownerFilter !== "all" || minPoCount !== "" || maxPoCount !== "";
 
-  const countByStatus = (s: BoxStatus) => boxes.filter((b) => b.status === s).length;
-  const countNoLocation = boxes.filter((b) => b.status === "ARCHIVED" && !b.bin_id).length;
+  const countByStatus = (status: BoxStatus) => boxes.filter((box) => box.status === status).length;
+  const countNoLocation = boxes.filter((box) => box.status === "ARCHIVED" && !box.bin_id).length;
 
   // KPI Metrics
   const totalBoxes = boxes.length;
@@ -182,15 +182,15 @@ export default function BoxesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={picFilter} onValueChange={setPicFilter}>
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Semua PIC" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua PIC</SelectItem>
-                {uniquePics.map((pic) => (
-                  <SelectItem key={pic} value={pic}>
-                    {pic}
+                {uniqueOwnerNames.map((ownerName) => (
+                  <SelectItem key={ownerName} value={ownerName}>
+                    {ownerName}
                   </SelectItem>
                 ))}
               </SelectContent>

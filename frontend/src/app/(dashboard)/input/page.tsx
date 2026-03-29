@@ -67,7 +67,7 @@ function getPrefixSuggestions(value: string): typeof PO_PREFIXES {
   if (!value) return [];
   // Already at or beyond the full prefix length — no suggestion needed
   return PO_PREFIXES.filter(
-    (p) => p.prefix.startsWith(value) && value.length < p.prefix.length,
+    (poPrefix) => poPrefix.prefix.startsWith(value) && value.length < poPrefix.prefix.length,
   );
 }
 
@@ -75,7 +75,7 @@ export default function BuatBoxPage() {
   const { user } = useApp();
   const createBox = useCreateBox();
   const { data: users = [] } = useUsers();
-  const buyers = users.filter((u) => u.role === "buyer");
+  const buyers = users.filter((userAccount) => userAccount.role === "buyer");
   const isAdmin = user?.role === "admin";
 
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
@@ -350,12 +350,12 @@ export default function BuatBoxPage() {
                               onFocus={() => setFocusedIndex(index)}
                               onBlur={() => setFocusedIndex(null)}
                               onKeyDown={(e) => {
-                                const s = getPrefixSuggestions(
+                                const suggestions = getPrefixSuggestions(
                                   entry?.no_po ?? "",
                                 );
-                                if (e.key === "Tab" && s.length > 0) {
+                                if (e.key === "Tab" && suggestions.length > 0) {
                                   e.preventDefault();
-                                  updateNoPO(index, s[0].prefix);
+                                  updateNoPO(index, suggestions[0].prefix);
                                 } else if (e.key === "Enter") {
                                   e.preventDefault();
                                   addField();

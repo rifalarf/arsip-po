@@ -249,28 +249,28 @@ export default function SettingsPage() {
 
   const toggleHeatmapRack = (id: string) =>
     setExpandedHeatmapRacks((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const updatedSet = new Set(prev);
+      updatedSet.has(id) ? updatedSet.delete(id) : updatedSet.add(id);
+      return updatedSet;
     });
 
   const toggleRack = (id: string) =>
     setExpandedRacks((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const updatedSet = new Set(prev);
+      updatedSet.has(id) ? updatedSet.delete(id) : updatedSet.add(id);
+      return updatedSet;
     });
   const toggleRow = (id: string) =>
     setExpandedRows((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const updatedSet = new Set(prev);
+      updatedSet.has(id) ? updatedSet.delete(id) : updatedSet.add(id);
+      return updatedSet;
     });
   const toggleLevel = (id: string) =>
     setExpandedLevels((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
+      const updatedSet = new Set(prev);
+      updatedSet.has(id) ? updatedSet.delete(id) : updatedSet.add(id);
+      return updatedSet;
     });
 
   const handleAsync = async (
