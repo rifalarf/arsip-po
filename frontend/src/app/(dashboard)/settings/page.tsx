@@ -38,9 +38,21 @@ import {
   Trash2,
   Layers,
   BarChart3,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Rack, Row, Level, Bin, Box } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // ---- BinCell: pure, tooltip on hover ----
 function BinCell({
@@ -115,6 +127,53 @@ function BinCell({
   );
 }
 
+// ---- Delete Confirm Button (dengan AlertDialog) ----
+function DeleteConfirmButton({
+  title,
+  description,
+  onConfirm,
+  variant = "destructive",
+  iconSize = "h-3 w-3",
+  buttonSize = "h-6 w-6",
+}: {
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  variant?: "destructive" | "outline";
+  iconSize?: string;
+  buttonSize?: string;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`${buttonSize} text-muted-foreground hover:text-destructive`}
+          aria-label={title}
+        >
+          <Trash2 className={iconSize} aria-hidden="true" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Ya, Hapus / Nonaktifkan
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ---- Rack Tree ----
 function BinRow({
   bin,
@@ -141,20 +200,18 @@ function BinRow({
             occupied ? "bg-green-500" : "bg-muted-foreground/30",
           )}
         />
-        <span className="font-mono text-xs">{bin.bin_code}</span>
+        <span className="font-mono text-xs text-muted-foreground">{bin.bin_code}</span>
         {occupied && (
           <span className="text-[10px] text-green-700 font-medium">Terisi</span>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-        aria-label={`Hapus bin ${bin.bin_code}`}
-        onClick={() => onDelete(bin.id)}
-      >
-        <Trash2 className="h-3 w-3" aria-hidden="true" />
-      </Button>
+      <DeleteConfirmButton
+        title={`Hapus Bin ${bin.bin_code}?`}
+        description={occupied
+          ? "Bin ini masih terisi box. Relokasi box terlebih dahulu."
+          : "Bin akan dihapus atau dinonaktifkan tergantung apakah pernah memiliki data historis."}
+        onConfirm={() => onDelete(bin.id)}
+      />
     </div>
   );
 }
@@ -305,7 +362,7 @@ export default function SettingsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{totalBins}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {racks.length} rack · {rows.length} row · {levels.length} level
+              {racks.filter(r => r.is_active).length} rack · {rows.filter(r => r.is_active).length} row · {levels.filter(l => l.is_active).length} level
             </p>
           </CardContent>
         </Card>
@@ -395,7 +452,10 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={rack.id}
-                    className="border rounded-lg overflow-hidden"
+                    className={cn(
+                      "border rounded-lg overflow-hidden",
+                      !rack.is_active && "opacity-50"
+                    )}
                   >
                     {/* Rack header */}
                     <div
@@ -409,24 +469,29 @@ export default function SettingsPage() {
                           <ChevronRight className="h-4 w-4" />
                         )}
                         <span className="font-semibold">{rack.name}</span>
+                        {!rack.is_active && (
+                          <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-1">
+                            <EyeOff className="h-2.5 w-2.5" />
+                            Nonaktif
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {rackBins.length} bin · {rackOccupied} terisi
                         </span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        aria-label={`Hapus rak ${rack.code}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAsync(() =>
-                            deleteRackMut.mutateAsync({ rackId: rack.id }),
-                          );
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      </Button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DeleteConfirmButton
+                          title={`Hapus Rack ${rack.code}?`}
+                          description={`Ini akan menghapus/menonaktifkan Rack ${rack.name} beserta seluruh ${rackRows.length} row, level, dan bin di dalamnya. Jika terdapat data historis, node akan dinonaktifkan. Jika belum pernah dipakai, akan dihapus permanen.`}
+                          onConfirm={() =>
+                            handleAsync(() =>
+                              deleteRackMut.mutateAsync({ rackId: rack.id }),
+                            )
+                          }
+                          iconSize="h-3.5 w-3.5"
+                          buttonSize="h-7 w-7"
+                        />
+                      </div>
                     </div>
 
                     {isExpanded && (
@@ -440,7 +505,10 @@ export default function SettingsPage() {
                           return (
                             <div
                               key={row.id}
-                              className="border rounded-md overflow-hidden ml-4"
+                              className={cn(
+                                "border rounded-md overflow-hidden ml-4",
+                                !row.is_active && "opacity-50"
+                              )}
                             >
                               {/* Row header */}
                               <div
@@ -456,29 +524,27 @@ export default function SettingsPage() {
                                   <span className="text-sm font-medium">
                                     Row {row.code}
                                   </span>
+                                  {!row.is_active && (
+                                    <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                      <EyeOff className="h-2.5 w-2.5" />
+                                      Nonaktif
+                                    </span>
+                                  )}
                                   <span className="text-xs text-muted-foreground">
                                     {rowLevels.length} level
                                   </span>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                  aria-label={`Hapus row ${row.code}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAsync(() =>
-                                      deleteRowMut.mutateAsync({
-                                        rowId: row.id,
-                                      }),
-                                    );
-                                  }}
-                                >
-                                  <Trash2
-                                    className="h-3 w-3"
-                                    aria-hidden="true"
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <DeleteConfirmButton
+                                    title={`Hapus Row ${row.code}?`}
+                                    description={`Ini akan menghapus/menonaktifkan Row ${row.code} beserta semua level dan bin di dalamnya.`}
+                                    onConfirm={() =>
+                                      handleAsync(() =>
+                                        deleteRowMut.mutateAsync({ rowId: row.id }),
+                                      )
+                                    }
                                   />
-                                </Button>
+                                </div>
                               </div>
 
                               {isRowExpanded && (
@@ -494,7 +560,10 @@ export default function SettingsPage() {
                                     return (
                                       <div
                                         key={lvl.id}
-                                        className="border rounded ml-3"
+                                        className={cn(
+                                          "border rounded ml-3",
+                                          !lvl.is_active && "opacity-50"
+                                        )}
                                       >
                                         {/* Level header */}
                                         <div
@@ -510,29 +579,29 @@ export default function SettingsPage() {
                                             <span className="text-xs font-medium">
                                               Level {lvl.code}
                                             </span>
+                                            {!lvl.is_active && (
+                                              <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                                <EyeOff className="h-2.5 w-2.5" />
+                                                Nonaktif
+                                              </span>
+                                            )}
                                             <span className="text-[11px] text-muted-foreground">
                                               {lvlBins.length} bin
                                             </span>
                                           </div>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                                            aria-label={`Hapus level ${lvl.code}`}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleAsync(() =>
-                                                deleteLevelMut.mutateAsync({
-                                                  levelId: lvl.id,
-                                                }),
-                                              );
-                                            }}
-                                          >
-                                            <Trash2
-                                              className="h-2.5 w-2.5"
-                                              aria-hidden="true"
+                                          <div onClick={(e) => e.stopPropagation()}>
+                                            <DeleteConfirmButton
+                                              title={`Hapus Level ${lvl.code}?`}
+                                              description={`Ini akan menghapus/menonaktifkan Level ${lvl.code} beserta ${lvlBins.length} bin di dalamnya.`}
+                                              onConfirm={() =>
+                                                handleAsync(() =>
+                                                  deleteLevelMut.mutateAsync({ levelId: lvl.id }),
+                                                )
+                                              }
+                                              iconSize="h-2.5 w-2.5"
+                                              buttonSize="h-5 w-5"
                                             />
-                                          </Button>
+                                          </div>
                                         </div>
 
                                         {isLvlExpanded && (
@@ -610,9 +679,9 @@ export default function SettingsPage() {
 
         {/* ---- HEATMAP TAB ---- */}
         <TabsContent value="heatmap" className="mt-4">
-          {racks.length === 0 ? (
+          {racks.filter(r => r.is_active).length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Belum ada struktur rak.
+              Belum ada struktur rak aktif.
             </p>
           ) : (
             <div className="space-y-5">
@@ -658,14 +727,14 @@ export default function SettingsPage() {
 
               {/* Rack accordion sections */}
               <div className="space-y-3">
-                {racks.map((rack) => {
-                  const rackRows = rows.filter((r) => r.rack_id === rack.id);
+                {racks.filter((r) => r.is_active).map((rack) => {
+                  const rackRows = rows.filter((r) => r.rack_id === rack.id && r.is_active);
                   const rackActiveBins = bins.filter(
                     (b) =>
                       b.is_active &&
                       rackRows.some((r) =>
                         levels
-                          .filter((l) => l.row_id === r.id)
+                          .filter((l) => l.row_id === r.id && l.is_active)
                           .some((l) => l.id === b.level_id),
                       ),
                   );
@@ -744,9 +813,9 @@ export default function SettingsPage() {
 
                       {isExpanded && (
                         <div className="p-4 bg-background space-y-4">
-                          {rackRows.map((row) => {
+                          {rackRows.filter((r) => r.is_active).map((row) => {
                             const rowLevels = levels.filter(
-                              (l) => l.row_id === row.id,
+                              (l) => l.row_id === row.id && l.is_active
                             );
                             return (
                               <div key={row.id}>
@@ -756,7 +825,7 @@ export default function SettingsPage() {
                                 <div className="flex flex-wrap gap-2">
                                   {rowLevels.map((lvl) => {
                                     const lvlBins = bins.filter(
-                                      (b) => b.level_id === lvl.id,
+                                      (b) => b.level_id === lvl.id
                                     );
                                     return (
                                       <div

@@ -23,12 +23,14 @@ export interface Row {
   id: string;
   rack_id: string;
   code: string;
+  is_active: boolean;
 }
 
 export interface Level {
   id: string;
   row_id: string;
   code: string;
+  is_active: boolean;
 }
 
 export interface Bin {

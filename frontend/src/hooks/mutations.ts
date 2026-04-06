@@ -212,6 +212,9 @@ export function useDeleteRack() {
     mutationFn: (vars: { rackId: string }) => apiDeleteRack(vars.rackId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.racks });
+      qc.invalidateQueries({ queryKey: queryKeys.rows });
+      qc.invalidateQueries({ queryKey: queryKeys.levels });
+      qc.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }
@@ -222,6 +225,8 @@ export function useDeleteRow() {
     mutationFn: (vars: { rowId: string }) => apiDeleteRow(vars.rowId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.rows });
+      qc.invalidateQueries({ queryKey: queryKeys.levels });
+      qc.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }
@@ -232,6 +237,7 @@ export function useDeleteLevel() {
     mutationFn: (vars: { levelId: string }) => apiDeleteLevel(vars.levelId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.levels });
+      qc.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }

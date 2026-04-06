@@ -864,76 +864,290 @@ export async function apiAddBin(
 }
 
 export async function apiDeleteRack(rackId: string): Promise<ActionResult> {
-  const { count } = await supabase
+  // 1. Ambil semua row di bawah rack ini
+  const { data: childRows } = await supabase
     .from("rows")
-    .select("*", { count: "exact", head: true })
+    .select("id")
     .eq("rack_id", rackId);
 
-  if ((count ?? 0) > 0) {
+  const rowIds = (childRows ?? []).map((r) => r.id);
+
+  // 2. Ambil semua level di bawah row-row tersebut
+  let levelIds: string[] = [];
+  if (rowIds.length > 0) {
+    const { data: childLevels } = await supabase
+      .from("levels")
+      .select("id")
+      .in("row_id", rowIds);
+    levelIds = (childLevels ?? []).map((l) => l.id);
+  }
+
+  // 3. Ambil semua bin di bawah level-level tersebut
+  let binIds: string[] = [];
+  if (levelIds.length > 0) {
+    const { data: childBins } = await supabase
+      .from("bins")
+      .select("id")
+      .in("level_id", levelIds);
+    binIds = (childBins ?? []).map((b) => b.id);
+  }
+
+  // 4. Cek apakah ada box ARCHIVED di salah satu bin
+  if (binIds.length > 0) {
+    const { count: activeBoxCount } = await supabase
+      .from("boxes")
+      .select("*", { count: "exact", head: true })
+      .in("bin_id", binIds)
+      .eq("status", "ARCHIVED");
+
+    if ((activeBoxCount ?? 0) > 0) {
+      return {
+        success: false,
+        message: "Rack masih memiliki bin yang terisi box. Relokasi box terlebih dahulu.",
+      };
+    }
+  }
+
+  // 5. Cek apakah ada data historis
+  let hasHistory = false;
+  if (binIds.length > 0) {
+    const { count: historyCount } = await supabase
+      .from("box_location_history")
+      .select("*", { count: "exact", head: true })
+      .or(binIds.map((id) => `from_bin_id.eq.${id},to_bin_id.eq.${id}`).join(","));
+
+    if ((historyCount ?? 0) > 0) {
+      hasHistory = true;
+    }
+  }
+
+  if (hasHistory) {
+    // SOFT DELETE: Nonaktifkan rack dan seluruh isinya
+    if (binIds.length > 0) {
+      await supabase.from("bins").update({ is_active: false }).in("id", binIds);
+    }
+    if (levelIds.length > 0) {
+      await supabase.from("levels").update({ is_active: false }).in("id", levelIds);
+    }
+    if (rowIds.length > 0) {
+      await supabase.from("rows").update({ is_active: false }).in("id", rowIds);
+    }
+    const { error } = await supabase
+      .from("racks")
+      .update({ is_active: false })
+      .eq("id", rackId);
+    if (error)
+      return { success: false, message: `Gagal nonaktifkan rack: ${error.message}` };
     return {
-      success: false,
-      message: "Rack masih memiliki row. Hapus row terlebih dahulu.",
+      success: true,
+      message: `Rack beserta ${rowIds.length} row, ${levelIds.length} level, dan ${binIds.length} bin telah dinonaktifkan.`,
     };
   }
 
+  // HARD DELETE (CASCADE): Hapus semua bin → level → row → rack
+  if (binIds.length > 0) {
+    await supabase.from("bins").delete().in("id", binIds);
+  }
+  if (levelIds.length > 0) {
+    await supabase.from("levels").delete().in("id", levelIds);
+  }
+  if (rowIds.length > 0) {
+    await supabase.from("rows").delete().in("id", rowIds);
+  }
   const { error } = await supabase.from("racks").delete().eq("id", rackId);
   if (error)
     return { success: false, message: `Gagal hapus rack: ${error.message}` };
-  return { success: true, message: "Rack berhasil dihapus." };
+  return {
+    success: true,
+    message: `Rack beserta ${rowIds.length} row, ${levelIds.length} level, dan ${binIds.length} bin berhasil dihapus.`,
+  };
 }
 
 export async function apiDeleteRow(rowId: string): Promise<ActionResult> {
-  const { count } = await supabase
+  // 1. Ambil semua level di bawah row ini
+  const { data: childLevels } = await supabase
     .from("levels")
-    .select("*", { count: "exact", head: true })
+    .select("id")
     .eq("row_id", rowId);
 
-  if ((count ?? 0) > 0) {
+  const levelIds = (childLevels ?? []).map((l) => l.id);
+
+  // 2. Ambil semua bin di bawah level-level tersebut
+  let binIds: string[] = [];
+  if (levelIds.length > 0) {
+    const { data: childBins } = await supabase
+      .from("bins")
+      .select("id")
+      .in("level_id", levelIds);
+    binIds = (childBins ?? []).map((b) => b.id);
+  }
+
+  // 3. Cek apakah ada box ARCHIVED di salah satu bin
+  if (binIds.length > 0) {
+    const { count: activeBoxCount } = await supabase
+      .from("boxes")
+      .select("*", { count: "exact", head: true })
+      .in("bin_id", binIds)
+      .eq("status", "ARCHIVED");
+
+    if ((activeBoxCount ?? 0) > 0) {
+      return {
+        success: false,
+        message: "Row masih memiliki bin yang terisi box. Relokasi box terlebih dahulu.",
+      };
+    }
+  }
+
+  // 4. Cek apakah ada data historis
+  let hasHistory = false;
+  if (binIds.length > 0) {
+    const { count: historyCount } = await supabase
+      .from("box_location_history")
+      .select("*", { count: "exact", head: true })
+      .or(binIds.map((id) => `from_bin_id.eq.${id},to_bin_id.eq.${id}`).join(","));
+
+    if ((historyCount ?? 0) > 0) {
+      hasHistory = true;
+    }
+  }
+
+  if (hasHistory) {
+    // SOFT DELETE: Nonaktifkan row, semua level, dan semua bin di bawahnya
+    if (binIds.length > 0) {
+      await supabase.from("bins").update({ is_active: false }).in("id", binIds);
+    }
+    if (levelIds.length > 0) {
+      await supabase.from("levels").update({ is_active: false }).in("id", levelIds);
+    }
+    const { error } = await supabase
+      .from("rows")
+      .update({ is_active: false })
+      .eq("id", rowId);
+    if (error)
+      return { success: false, message: `Gagal nonaktifkan row: ${error.message}` };
     return {
-      success: false,
-      message: "Row masih memiliki level. Hapus level terlebih dahulu.",
+      success: true,
+      message: `Row beserta ${levelIds.length} level dan ${binIds.length} bin telah dinonaktifkan.`,
     };
   }
 
+  // HARD DELETE (CASCADE): Hapus semua bin → level → row
+  if (binIds.length > 0) {
+    await supabase.from("bins").delete().in("id", binIds);
+  }
+  if (levelIds.length > 0) {
+    await supabase.from("levels").delete().in("id", levelIds);
+  }
   const { error } = await supabase.from("rows").delete().eq("id", rowId);
   if (error)
     return { success: false, message: `Gagal hapus row: ${error.message}` };
-  return { success: true, message: "Row berhasil dihapus." };
+  return {
+    success: true,
+    message: `Row beserta ${levelIds.length} level dan ${binIds.length} bin berhasil dihapus.`,
+  };
 }
 
 export async function apiDeleteLevel(levelId: string): Promise<ActionResult> {
-  const { count } = await supabase
+  // 1. Ambil semua bin di bawah level ini
+  const { data: childBins } = await supabase
     .from("bins")
-    .select("*", { count: "exact", head: true })
+    .select("id, is_active")
     .eq("level_id", levelId);
 
-  if ((count ?? 0) > 0) {
+  const binIds = (childBins ?? []).map((b) => b.id);
+
+  // 2. Cek apakah ada box ARCHIVED di salah satu bin
+  if (binIds.length > 0) {
+    const { count: activeBoxCount } = await supabase
+      .from("boxes")
+      .select("*", { count: "exact", head: true })
+      .in("bin_id", binIds)
+      .eq("status", "ARCHIVED");
+
+    if ((activeBoxCount ?? 0) > 0) {
+      return {
+        success: false,
+        message: "Level masih memiliki bin yang terisi box. Relokasi box terlebih dahulu.",
+      };
+    }
+  }
+
+  // 3. Cek apakah ada data historis di bin-bin milik level ini
+  let hasHistory = false;
+  if (binIds.length > 0) {
+    const { count: historyCount } = await supabase
+      .from("box_location_history")
+      .select("*", { count: "exact", head: true })
+      .or(binIds.map((id) => `from_bin_id.eq.${id},to_bin_id.eq.${id}`).join(","));
+
+    if ((historyCount ?? 0) > 0) {
+      hasHistory = true;
+    }
+  }
+
+  if (hasHistory) {
+    // SOFT DELETE: Nonaktifkan level dan semua bin di bawahnya
+    if (binIds.length > 0) {
+      await supabase.from("bins").update({ is_active: false }).in("id", binIds);
+    }
+    const { error } = await supabase
+      .from("levels")
+      .update({ is_active: false })
+      .eq("id", levelId);
+    if (error)
+      return { success: false, message: `Gagal nonaktifkan level: ${error.message}` };
     return {
-      success: false,
-      message: "Level masih memiliki bin. Hapus bin terlebih dahulu.",
+      success: true,
+      message: `Level beserta ${binIds.length} bin telah dinonaktifkan (data historis dipertahankan).`,
     };
   }
 
+  // HARD DELETE (CASCADE): Hapus semua bin lalu level
+  if (binIds.length > 0) {
+    await supabase.from("bins").delete().in("id", binIds);
+  }
   const { error } = await supabase.from("levels").delete().eq("id", levelId);
   if (error)
     return { success: false, message: `Gagal hapus level: ${error.message}` };
-  return { success: true, message: "Level berhasil dihapus." };
+  return {
+    success: true,
+    message: `Level beserta ${binIds.length} bin berhasil dihapus.`,
+  };
 }
 
 export async function apiDeleteBin(binId: string): Promise<ActionResult> {
-  const { count } = await supabase
+  // 1. Cek apakah bin sedang menampung box ARCHIVED
+  const { count: activeBoxCount } = await supabase
     .from("boxes")
     .select("*", { count: "exact", head: true })
     .eq("bin_id", binId)
     .eq("status", "ARCHIVED");
 
-  if ((count ?? 0) > 0) {
+  if ((activeBoxCount ?? 0) > 0) {
     return {
       success: false,
       message: "Bin masih terisi oleh box. Relokasi box terlebih dahulu.",
     };
   }
 
+  // 2. Cek apakah bin PERNAH digunakan (ada di box_location_history)
+  const { count: historyCount } = await supabase
+    .from("box_location_history")
+    .select("*", { count: "exact", head: true })
+    .or(`from_bin_id.eq.${binId},to_bin_id.eq.${binId}`);
+
+  if ((historyCount ?? 0) > 0) {
+    // SOFT DELETE: Bin pernah dipakai, nonaktifkan saja
+    const { error } = await supabase
+      .from("bins")
+      .update({ is_active: false })
+      .eq("id", binId);
+    if (error)
+      return { success: false, message: `Gagal nonaktifkan bin: ${error.message}` };
+    return { success: true, message: "Bin telah dinonaktifkan (data historis dipertahankan)." };
+  }
+
+  // 3. HARD DELETE: Bin belum pernah dipakai sama sekali
   const { error } = await supabase.from("bins").delete().eq("id", binId);
   if (error)
     return { success: false, message: `Gagal hapus bin: ${error.message}` };
