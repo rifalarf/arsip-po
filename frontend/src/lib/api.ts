@@ -1,5 +1,5 @@
-// ==========================================
-// Arsip PO — Supabase API Layer
+﻿// ==========================================
+// Arsip PO â€” Supabase API Layer
 // ==========================================
 
 import { supabase } from "./supabase";
@@ -166,7 +166,7 @@ export async function apiCreateBox(
       message: `Gagal generate No Gungyu: ${gungyuError.message}`,
     };
   }
-  const noGungyu = gungyuResult as string;
+  const noGungyu = "32-H-" + (gungyuResult as string).split("-")[-1]; // Temporary start from 32-H
 
   const now = new Date().toISOString();
 
@@ -222,7 +222,9 @@ export async function apiCreateBox(
       .from("bins")
       .select("id, bin_code, max_boxes")
       .eq("is_active", true)
-      .order("bin_code", { ascending: true });
+      .order("bin_code", { ascending: true })
+        .gte("bin_code", "C-04")
+        .lte("bin_code", "C-09");
 
     if (bins && bins.length > 0) {
       // 2. Count current occupancy per bin
@@ -276,7 +278,7 @@ export async function apiCreateBox(
       }
     }
   } catch {
-    // Auto-assign failed silently — box is still created without location
+    // Auto-assign failed silently â€” box is still created without location
   }
 
   return {
@@ -944,7 +946,7 @@ export async function apiDeleteRack(rackId: string): Promise<ActionResult> {
     };
   }
 
-  // HARD DELETE (CASCADE): Hapus semua bin → level → row → rack
+  // HARD DELETE (CASCADE): Hapus semua bin â†’ level â†’ row â†’ rack
   if (binIds.length > 0) {
     await supabase.from("bins").delete().in("id", binIds);
   }
@@ -1031,7 +1033,7 @@ export async function apiDeleteRow(rowId: string): Promise<ActionResult> {
     };
   }
 
-  // HARD DELETE (CASCADE): Hapus semua bin → level → row
+  // HARD DELETE (CASCADE): Hapus semua bin â†’ level â†’ row
   if (binIds.length > 0) {
     await supabase.from("bins").delete().in("id", binIds);
   }
@@ -1237,4 +1239,5 @@ export async function apiDeletePOFile(
 
   return { success: true, message: result.message };
 }
+
 
