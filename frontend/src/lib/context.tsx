@@ -60,30 +60,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Skip TOKEN_REFRESHED events — they don't change the user identity.
-      // Processing them causes a race condition where user is momentarily set
-      // to null while fetchProfile re-runs.
-      if (event === "TOKEN_REFRESHED") {
-        // Still mark as initialised if this was somehow the first event
-        if (!initialised) {
-          initialised = true;
-          setLoading(false);
-        }
+      console.debug("[AppProvider] Auth event:", event, session?.user?.id);
+
+      // Skip TOKEN_REFRESHED if we already have a user. 
+      // Also skip events that happen BEFORE initialisation completes if it is just a refresh.
+      if (event === "TOKEN_REFRESHED" && user) {
         return;
       }
 
       if (event === "SIGNED_OUT") {
         queryClient.clear();
-        toast.info("Sesi login Anda telah berakhir. Silakan masuk kembali.");
+        setUser(null);
+        if (initialised) {
+          toast.info("Sesi login Anda telah berakhir. Silakan masuk kembali.");
+        }
       }
 
       const requestId = ++currentRequestId;
+
       try {
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
-          // Only apply if this is still the latest request
           if (requestId === currentRequestId) {
             setUser(profile);
+            if (!profile) {
+              console.warn("[AppProvider] Auth session exists but profile not found for UID:", session.user.id);
+              // Handle edge case where auth session exists but no matched profile in 'users' table
+              if (event === "INITIAL_SESSION") {
+                 // Might want to sign out or just stay unauthenticated
+              }
+            }
           }
         } else {
           if (requestId === currentRequestId) {
@@ -91,15 +97,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        console.error("[AppProvider] Failed to fetch user profile:", err);
+        console.error("[AppProvider] Auth error:", err);
+      } finally {
+        // Only set loading to false AFTER trying to fetch the profile
         if (requestId === currentRequestId) {
-          setUser(null);
+          if (!initialised) {
+            initialised = true;
+            setLoading(false);
+            clearTimeout(timeout);
+          }
         }
-      }
-      // Only flip loading off once (on the first event — INITIAL_SESSION)
-      if (!initialised) {
-        initialised = true;
-        setLoading(false);
       }
     });
 queryClient
