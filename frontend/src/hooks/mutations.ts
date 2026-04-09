@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "./queries";
 import {
   apiCreateBox,
@@ -9,7 +9,7 @@ import {
   apiReturnPO,
   apiEditPO,
   apiDeletePO,
-  apiAddRack,
+  apiAddRack, apiAddRackBatch,
   apiAddRow,
   apiAddLevel,
   apiAddBin,
@@ -272,6 +272,31 @@ export function useDeletePOFile() {
       apiDeletePOFile(vars.poId, vars.fileUrl),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.pos });
+    },
+  });
+}
+
+
+export function useAddRackBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      rackCode: string;
+      rowCount: number;
+      levelCount: number;
+      binCount: number;
+    }) =>
+      apiAddRackBatch(
+        vars.rackCode,
+        vars.rowCount,
+        vars.levelCount,
+        vars.binCount
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.racks });
+      qc.invalidateQueries({ queryKey: queryKeys.rows });
+      qc.invalidateQueries({ queryKey: queryKeys.levels });
+      qc.invalidateQueries({ queryKey: queryKeys.bins });
     },
   });
 }

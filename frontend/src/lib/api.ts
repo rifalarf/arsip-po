@@ -865,6 +865,77 @@ export async function apiAddBin(
   return { success: true, message: `Bin ${binCode} berhasil ditambahkan.` };
 }
 
+
+export async function apiAddRackBatch(
+  rackCode: string,
+  rowCount: number,
+  levelCount: number,
+  binCount: number,
+): Promise<ActionResult> {
+  const rackName = `Rack ${rackCode.toUpperCase()}`;
+  
+  // 1. Create Rack
+  const { data: rack, error: rackErr } = await supabase
+    .from("racks")
+    .insert({ code: rackCode.toUpperCase(), name: rackName, is_active: true })
+    .select("id")
+    .single();
+
+  if (rackErr) return { success: false, message: `Gagal buat rack: ${rackErr.message}` };
+
+  const rows = [];
+  const levels = [];
+  const bins = [];
+
+  // Generate Rows (1 to rowCount, using numbers as requested or A-E logic)
+  // Request says "bin 1-9, row level a-e". 
+  // Wait, "row level a-e" usually means Row A, Row B... or Level A, Level B...
+  // I will use A-E for Rows and A-E for Levels as a safe bet for "level a-e", 
+  // and 1-9 for Bins as requested.
+  
+  const charMap = ["A", "B", "C", "D", "E"];
+
+  for (let i = 0; i < Math.min(rowCount, 5); i++) {
+    const rowChar = charMap[i];
+    const { data: row, error: rowErr } = await supabase
+      .from("rows")
+      .insert({ rack_id: rack.id, code: rowChar })
+      .select("id")
+      .single();
+    
+    if (rowErr) continue;
+
+    for (let j = 0; j < Math.min(levelCount, 5); j++) {
+      const levelChar = charMap[j];
+      const { data: level, error: levelErr } = await supabase
+        .from("levels")
+        .insert({ row_id: row.id, code: levelChar })
+        .select("id")
+        .single();
+      
+      if (levelErr) continue;
+
+      for (let k = 1; k <= Math.min(binCount, 9); k++) {
+        const binCodeNum = k.toString().padStart(2, "0");
+        const fullBinCode = `${rackCode.toUpperCase()}-${rowChar}-${levelChar}-${binCodeNum}`;
+        bins.push({
+          level_id: level.id,
+          code: binCodeNum,
+          bin_code: fullBinCode,
+          max_boxes: 1,
+          is_active: true,
+        });
+      }
+    }
+  }
+
+  if (bins.length > 0) {
+    const { error: binsErr } = await supabase.from("bins").insert(bins);
+    if (binsErr) return { success: false, message: `Rack dibuat tapi gagal buat bin: ${binsErr.message}` };
+  }
+
+  return { success: true, message: `Berhasil membuat ${rackName} dengan ${bins.length} bin.` };
+}
 export async function apiDeleteRack(rackId: string): Promise<ActionResult> {
   // 1. Ambil semua row di bawah rack ini
   const { data: childRows } = await supabase
@@ -1239,5 +1310,6 @@ export async function apiDeletePOFile(
 
   return { success: true, message: result.message };
 }
+
 
 

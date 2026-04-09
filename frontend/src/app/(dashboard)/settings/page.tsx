@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -11,7 +11,7 @@ import {
   useOccupiedBinIds,
 } from "@/hooks/queries";
 import {
-  useAddRack,
+  useAddRack, useAddRackBatch,
   useAddRow,
   useAddLevel,
   useAddBin,
@@ -100,7 +100,7 @@ function BinCell({
                 <span className="text-muted-foreground w-10 shrink-0">
                   Box:
                 </span>
-                <span className="font-medium">{box.no_gungyu ?? "—"}</span>
+                <span className="font-medium">{box.no_gungyu ?? "â€”"}</span>
               </div>
               <div className="flex gap-1.5">
                 <span className="text-muted-foreground w-10 shrink-0">
@@ -362,7 +362,7 @@ export default function SettingsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{totalBins}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {racks.filter(r => r.is_active).length} rack · {rows.filter(r => r.is_active).length} row · {levels.filter(l => l.is_active).length} level
+              {racks.filter(r => r.is_active).length} rack Â· {rows.filter(r => r.is_active).length} row Â· {levels.filter(l => l.is_active).length} level
             </p>
           </CardContent>
         </Card>
@@ -416,7 +416,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Pohon Struktur Rak</CardTitle>
                 <AddInline
-                  placeholder="Kode rack (A, B…)"
+                  placeholder="Kode rack (A, Bâ€¦)"
                   label="Rack"
                   onAdd={(val) =>
                     handleAsync(() =>
@@ -476,7 +476,7 @@ export default function SettingsPage() {
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {rackBins.length} bin · {rackOccupied} terisi
+                          {rackBins.length} bin Â· {rackOccupied} terisi
                         </span>
                       </div>
                       <div onClick={(e) => e.stopPropagation()}>
@@ -623,7 +623,7 @@ export default function SettingsPage() {
                                               />
                                             ))}
                                             <AddInline
-                                              placeholder="Kode bin (01…)"
+                                              placeholder="Kode bin (01â€¦)"
                                               label="Bin"
                                               onAdd={(val) =>
                                                 handleAsync(() =>
@@ -640,7 +640,7 @@ export default function SettingsPage() {
                                     );
                                   })}
                                   <AddInline
-                                    placeholder="Kode level (A, B…)"
+                                    placeholder="Kode level (A, Bâ€¦)"
                                     label="Level"
                                     onAdd={(val) =>
                                       handleAsync(() =>
@@ -657,7 +657,7 @@ export default function SettingsPage() {
                           );
                         })}
                         <AddInline
-                          placeholder="Kode row (01, 02…)"
+                          placeholder="Kode row (01, 02â€¦)"
                           label="Row"
                           onAdd={(val) =>
                             handleAsync(() =>
@@ -713,7 +713,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded bg-amber-100 border border-amber-400" />
-                  <span>Terisi · ada PO dipinjam</span>
+                  <span>Terisi Â· ada PO dipinjam</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 rounded bg-muted/10 border border-border" />
@@ -883,3 +883,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+
