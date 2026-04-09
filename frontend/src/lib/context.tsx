@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import { User } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 // ---- Context shape (auth only) ----
 interface AuthState {
@@ -36,6 +38,7 @@ async function fetchProfile(authId: string): Promise<User | null> {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Restore session on mount — rely solely on onAuthStateChange (fires INITIAL_SESSION on subscribe)
   useEffect(() => {
@@ -69,6 +72,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (event === "SIGNED_OUT") {
+        queryClient.clear();
+        toast.info("Sesi login Anda telah berakhir. Silakan masuk kembali.");
+      }
+
       const requestId = ++currentRequestId;
       try {
         if (session?.user) {
@@ -94,7 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     });
-
+queryClient
     return () => {
       clearTimeout(timeout);
       subscription.unsubscribe();
@@ -134,9 +142,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    queryClient.clear();
     await supabase.auth.signOut();
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   return (
     <AppContext.Provider value={{ user, loading, login, logout }}>
