@@ -507,7 +507,7 @@ export default function SettingsPage() {
                               key={row.id}
                               className={cn(
                                 "border rounded-md overflow-hidden ml-4",
-                                !row.is_active && "opacity-50"
+                                false && "opacity-50"
                               )}
                             >
                               {/* Row header */}
@@ -524,7 +524,7 @@ export default function SettingsPage() {
                                   <span className="text-sm font-medium">
                                     Row {row.code}
                                   </span>
-                                  {!row.is_active && (
+                                  {false && (
                                     <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-1">
                                       <EyeOff className="h-2.5 w-2.5" />
                                       Nonaktif
@@ -883,4 +883,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
 
